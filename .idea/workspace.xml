@@ -17,11 +17,11 @@
       <file leaf-file-name="OthelloBoard.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="8" column="63" lean-forward="false" selection-start-line="8" selection-start-column="63" selection-end-line="8" selection-end-column="63" />
+            <state relative-caret-position="487">
+              <caret line="258" column="38" lean-forward="false" selection-start-line="258" selection-start-column="38" selection-end-line="258" selection-end-column="38" />
               <folding>
-                <element signature="e#8473#8474#0" expanded="true" />
-                <element signature="e#8551#8552#0" expanded="true" />
+                <element signature="e#12240#12241#0" expanded="true" />
+                <element signature="e#12318#12319#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -327,11 +327,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="8" column="63" lean-forward="false" selection-start-line="8" selection-start-column="63" selection-end-line="8" selection-end-column="63" />
+        <state relative-caret-position="487">
+          <caret line="258" column="38" lean-forward="false" selection-start-line="258" selection-start-column="38" selection-end-line="258" selection-end-column="38" />
           <folding>
-            <element signature="e#8473#8474#0" expanded="true" />
-            <element signature="e#8551#8552#0" expanded="true" />
+            <element signature="e#12240#12241#0" expanded="true" />
+            <element signature="e#12318#12319#0" expanded="true" />
           </folding>
         </state>
       </provider>

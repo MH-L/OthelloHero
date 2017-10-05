@@ -15,8 +15,9 @@ public class OthelloBoard {
     private short[] ltorDiags;
     private short[] rtolDiags;
     private char[][] grid;
-    private List<Byte> mobility;
-    private int totalPieces = 0;
+    private Set<Integer> mobility;
+    private int numWhitePieces = 0;
+    private int numBlackPieces = 0;
 
     // Stores which positions are valid next moves for each line for white
     // The key of value (most significant) store valid locations, and its corresponding key is the flip pattern
@@ -201,7 +202,7 @@ public class OthelloBoard {
         cols = new short[WIDTH];
         ltorDiags = new short[HEIGHT + WIDTH - 1];
         rtolDiags = new short[HEIGHT + WIDTH - 1];
-        mobility = new ArrayList<>();
+        mobility = new HashSet<>();
 
         grid = new char[8][8];
         for (int i = 0; i < grid.length; i++) {
@@ -211,24 +212,136 @@ public class OthelloBoard {
         }
     }
 
+    public void reset() {
+        mobility.clear();
+
+        // reset grid
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[i].length; j++) {
+                grid[i][j] = '0';
+            }
+        }
+        numWhitePieces = 0;
+        numBlackPieces = 0;
+    }
+
     public boolean updateBoard(int move, boolean isFirst) {
-        short stone = isFirst ? BLACK_PIECE : WHITE_PIECE;
-        if (totalPieces < 4) {
-            // During initial setup phase
-            int rowIndex = move / WIDTH;
-            int colIndex = move % WIDTH;
-            rows[rowIndex] |= (stone << (colIndex * 2));
-            cols[colIndex] |= (stone << (rowIndex * 2));
-            int ltorIndex = getltorDiagIndex(move);
-            int rtolIndex = getrtolDiagIndex(move);
-            int indexOnLR = getIndexOnLtoR(move);
-            int indexOnRL = getIndexOnRtoL(move);
-            ltorDiags[ltorIndex] |= (stone << (indexOnLR * 2));
-            rtolDiags[rtolIndex] |= (stone << (indexOnRL * 2));
+        if (!mobility.contains(move))
+            return false;
+        char piece = isFirst ? '1' : '2';
+        Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
+        int rowIndex = move / WIDTH;
+        int colIndex = move % WIDTH;
+        int lrDiagIdx = getltorDiagIndex(move);
+        int rlDiagIdx = getrtolDiagIndex(move);
+        int idxOnLR = getIndexOnLtoR(move);
+        int idxOnRL = getIndexOnRtoL(move);
+        String row = getRow(rowIndex);
+        String col = getCol(colIndex);
+        String lrDiag = getLRDiag(lrDiagIdx);
+        String rlDiag = getRLDiag(rlDiagIdx);
+        Set<Integer> flipSet = new HashSet<>();
+
+        // map MUST contains row, col, diag
+        for (int i : map.get(row).get(colIndex))
+            flipSet.add(rowIndex * WIDTH + i);
+        for (int j : map.get(col).get(rowIndex))
+            flipSet.add(j * WIDTH + colIndex);
+        for (int m : map.get(lrDiag).get(idxOnLR))
+            flipSet.add(lrDiagToBoardPosition(lrDiagIdx, m));
+        for (int n : map.get(rlDiag).get(idxOnRL))
+            flipSet.add(rlDiagToBoardPosition(rlDiagIdx, n));
+
+        for (int p : flipSet)
+            flip(p);
+        grid[rowIndex][colIndex] = piece;
+
+        // Next turn is the opponent's
+        countMobility(!isFirst);
+        return true;
+    }
+
+    private void countMobility(boolean isFirst) {
+        mobility.clear();
+        Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
+
+        // Rows
+        for (int i = 0; i < HEIGHT; i++) {
+            String row = getRow(i);
+            if (map.containsKey(row)) {
+                Set<Integer> mobSet = map.get(row).keySet();
+                for (int mob : mobSet)
+                    mobility.add(i * WIDTH + mob);
+            }
         }
 
-        // TODO
-        return false;
+        // Cols
+        for (int i = 0; i < WIDTH; i++) {
+            String col = getCol(i);
+            if (map.containsKey(col)) {
+                Set<Integer> mobSet = map.get(col).keySet();
+                for (int mob : mobSet)
+                    mobility.add(mob * WIDTH + i);
+            }
+        }
+
+        // LR diagonals
+        for (int i = 0; i < NUM_LR_DIAGS; i++) {
+            String lrDiag = getLRDiag(i);
+            if (map.containsKey(lrDiag)) {
+                Set<Integer> mobSet = map.get(lrDiag).keySet();
+                for (int mob : mobSet)
+                    mobility.add(lrDiagToBoardPosition(i, mob));
+            }
+        }
+
+        // RL diagonals
+        for (int i = 0; i < NUM_RL_DIAGS; i++) {
+            String rlDiag = getRLDiag(i);
+            if (map.containsKey(rlDiag)) {
+                Set<Integer> mobSet = map.get(rlDiag).keySet();
+                for (int mob : mobSet)
+                    mobility.add(rlDiagToBoardPosition(i, mob));
+            }
+        }
+    }
+
+    private String getRow(int index) {
+        StringBuilder sb = new StringBuilder();
+        for (int j = 0; j < WIDTH; j++) {
+            sb.append(grid[index][j]);
+        }
+        return sb.toString();
+    }
+
+    private String getCol(int index) {
+        StringBuilder sb = new StringBuilder();
+        for (int j = 0; j < HEIGHT; j++) {
+            sb.append(grid[j][index]);
+        }
+        return sb.toString();
+    }
+
+    private String getLRDiag(int index) {
+        int diagLen = getDiagLen(index);
+        int startRowIdx = index < WIDTH ? 0 : index - WIDTH + 1; // can use Math.max(..., ...)
+        int startColIdx = index < WIDTH ? WIDTH - 1 - index : 0; // can use Math.min(..., ...)
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < diagLen; i++) {
+            sb.append(grid[startRowIdx+i][startColIdx+i]);
+        }
+        return sb.toString();
+    }
+
+    private String getRLDiag(int index) {
+        int diagLen = getDiagLen(index);
+        int startRowIdx = index < WIDTH ? 0 : index - WIDTH + 1;
+        int startColIdx = index < WIDTH ? index : WIDTH - 1;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < diagLen; i++) {
+            sb.append(grid[startRowIdx+i][startColIdx-i]);
+        }
+        return sb.toString();
     }
 
     private static int getDiagLen(int diagIndex) {
