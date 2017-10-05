@@ -17,10 +17,12 @@
       <file leaf-file-name="OthelloBoard.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-518">
-              <caret line="25" column="6" lean-forward="false" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="6" />
+            <state relative-caret-position="181">
+              <caret line="140" column="5" lean-forward="true" selection-start-line="140" selection-start-column="5" selection-end-line="140" selection-end-column="5" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#5072#5073#0" expanded="true" />
+                <element signature="e#5150#5151#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -302,10 +304,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-518">
-          <caret line="25" column="6" lean-forward="false" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="6" />
+        <state relative-caret-position="181">
+          <caret line="140" column="5" lean-forward="true" selection-start-line="140" selection-start-column="5" selection-end-line="140" selection-end-column="5" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#5072#5073#0" expanded="true" />
+            <element signature="e#5150#5151#0" expanded="true" />
           </folding>
         </state>
       </provider>

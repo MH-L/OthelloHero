@@ -15,6 +15,7 @@ public class OthelloBoard {
     private short[] cols;
     private short[] ltorDiags;
     private short[] rtolDiags;
+    private char[][] grid;
     private List<Byte> mobility;
     private int totalPieces = 0;
 
@@ -106,6 +107,13 @@ public class OthelloBoard {
         ltorDiags = new short[HEIGHT + WIDTH - 1];
         rtolDiags = new short[HEIGHT + WIDTH - 1];
         mobility = new ArrayList<>();
+
+        grid = new char[8][8];
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[i].length; j++) {
+                grid[i][j] = '0';
+            }
+        }
     }
 
     public boolean updateBoard(int move, boolean isFirst) {
@@ -118,10 +126,29 @@ public class OthelloBoard {
             cols[colIndex] |= (stone << (rowIndex * 2));
             int ltorIndex = getltorDiagIndex(move);
             int rtolIndex = getrtolDiagIndex(move);
+            int indexOnLR = getIndexOnLtoR(move);
+            int indexOnRL = getIndexOnRtoL(move);
+            ltorDiags[ltorIndex] |= (stone << (indexOnLR * 2));
+            rtolDiags[rtolIndex] |= (stone << (indexOnRL * 2));
         }
 
         // TODO
         return false;
+    }
+
+    private static int getDiagLen(int diagIndex) {
+        return Math.min(diagIndex + 1, WIDTH + HEIGHT - 1 - diagIndex);
+    }
+
+    /**
+     * Must be a valid input
+     * @param move
+     */
+    private void flip(int move) {
+        if (grid[move / WIDTH][move % WIDTH] == '1')
+            grid[move / WIDTH][move % WIDTH] = '2';
+        else
+            grid[move / WIDTH][move % WIDTH] = '1';
     }
 
     private int getltorDiagIndex(int position) {
