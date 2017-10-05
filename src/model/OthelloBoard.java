@@ -1,13 +1,12 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class OthelloBoard {
     public static final int WIDTH = 8;
     public static final int HEIGHT = 8;
+    private static final int NUM_LR_DIAGS = WIDTH + HEIGHT - 1;
+    private static final int NUM_RL_DIAGS = WIDTH + HEIGHT - 1;
     private static final short BLACK_PIECE = 1;
     private static final short WHITE_PIECE = 2;
     private static final short NO_PIECE = 0;
@@ -26,6 +25,9 @@ public class OthelloBoard {
     // Stores which positions are valid next moves for each line for black
     private static List<Map<Short, Map<Integer, Short>>> flipMapBlack;
 
+    private static Map<String, Map<Integer, Set<Integer>>> cacheMapBlack;
+    private static Map<String, Map<Integer, Set<Integer>>> cacheMapWhite;
+
     private static short[] flipPatternToAdder;
 
     static {
@@ -36,6 +38,10 @@ public class OthelloBoard {
             flipMapWhite.add(new HashMap<>());
             flipMapBlack.add(new HashMap<>());
         }
+
+        cacheMapBlack = new HashMap<>();
+        cacheMapWhite = new HashMap<>();
+        countFlipAll();
 
         initializeAdder();
     }
@@ -91,6 +97,95 @@ public class OthelloBoard {
                     returnVal.put(i, flipper);
                     break;
                 } else if (curPiece == NO_PIECE)
+                    break;
+            }
+        }
+        // todo need another pass
+
+        return returnVal;
+    }
+
+    private static void countFlipAll() {
+        for (int len = 3; len <= WIDTH; len++) {
+            String next = "";
+            for (int j = 0; j < len; j++) {
+                next += '0';
+            }
+
+            do {
+                Map<Integer, Set<Integer>> result = countFlipSingle(next, true);
+                Map<Integer, Set<Integer>> result2 = countFlipSingle(next, false);
+                if (!result.isEmpty())
+                    cacheMapWhite.put(next, result);
+                if (!result2.isEmpty())
+                    cacheMapBlack.put(next, result);
+            } while (!(next = nextStr(next)).isEmpty());
+        }
+    }
+
+    /**
+     * Find next 3-radix string using elementary-school arithmetic
+     * @param str
+     * @return
+     */
+    private static String nextStr(String str) {
+        StringBuilder sb = new StringBuilder(str);
+        int counter = 0;
+        while (counter < sb.length()) {
+            char cur = sb.charAt(counter);
+            if (cur != '2') {
+                if (cur == '0')
+                    sb.setCharAt(counter, '1');
+                else
+                    sb.setCharAt(counter, '2');
+                return sb.toString();
+            } else
+                sb.setCharAt(counter, '0');
+        }
+
+        return "";
+    }
+
+    private static Map<Integer, Set<Integer>> countFlipSingle(String str, boolean isFirst) {
+        Map<Integer, Set<Integer>> returnVal = new HashMap<>();
+        char selfPiece = isFirst ? '1' : '2';
+        char oppPiece = isFirst ? '2' : '1';
+        for (int i = 0; i < str.length(); i++) {
+            char curPiece = str.charAt(i);
+            if (curPiece != '0')
+                continue;
+            for (int j = i + 1; j < str.length(); j++) {
+                char innerPiece = str.charAt(j);
+                if (innerPiece == selfPiece && j > i + 1) {
+                    Set<Integer> s = new HashSet<>();
+                    for (int k = i + 1; k < j; k++) {
+                        s.add(k);
+                    }
+                    returnVal.put(i, s);
+                } else if (innerPiece == '0')
+                    break;
+            }
+        }
+
+        for (int i = str.length() - 1; i >= 0; i--) {
+            char curPiece = str.charAt(i);
+            if (curPiece != '0')
+                continue;
+            for (int j = i - 1; j >= 0 ; j--) {
+                char innerPiece = str.charAt(j);
+                if (innerPiece == selfPiece && j < i - 1) {
+                    Set<Integer> s = new HashSet<>();
+                    for (int k = i - 1; k > j; k--) {
+                        s.add(k);
+                    }
+                    if (!returnVal.containsKey(i))
+                        returnVal.put(i, s);
+                    else {
+                        // Can flip from two directions
+                        s.addAll(returnVal.get(i));
+                        returnVal.put(i, s);
+                    }
+                } else if (innerPiece == '0')
                     break;
             }
         }

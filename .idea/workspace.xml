@@ -17,12 +17,11 @@
       <file leaf-file-name="OthelloBoard.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="181">
-              <caret line="140" column="5" lean-forward="true" selection-start-line="140" selection-start-column="5" selection-end-line="140" selection-end-column="5" />
+            <state relative-caret-position="136">
+              <caret line="8" column="63" lean-forward="false" selection-start-line="8" selection-start-column="63" selection-end-line="8" selection-end-column="63" />
               <folding>
-                <element signature="imports" expanded="true" />
-                <element signature="e#5072#5073#0" expanded="true" />
-                <element signature="e#5150#5151#0" expanded="true" />
+                <element signature="e#8473#8474#0" expanded="true" />
+                <element signature="e#8551#8552#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -302,14 +301,37 @@
         </state>
       </provider>
     </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/lang/String.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="110" column="19" lean-forward="false" selection-start-line="110" selection-start-column="19" selection-end-line="110" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/lang/AbstractStringBuilder.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="425">
+          <caret line="450" column="20" lean-forward="true" selection-start-line="450" selection-start-column="20" selection-end-line="450" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/lang/StringBuffer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="332">
+          <caret line="269" column="16" lean-forward="true" selection-start-line="269" selection-start-column="16" selection-end-line="269" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="181">
-          <caret line="140" column="5" lean-forward="true" selection-start-line="140" selection-start-column="5" selection-end-line="140" selection-end-column="5" />
+        <state relative-caret-position="136">
+          <caret line="8" column="63" lean-forward="false" selection-start-line="8" selection-start-column="63" selection-end-line="8" selection-end-column="63" />
           <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#5072#5073#0" expanded="true" />
-            <element signature="e#5150#5151#0" expanded="true" />
+            <element signature="e#8473#8474#0" expanded="true" />
+            <element signature="e#8551#8552#0" expanded="true" />
           </folding>
         </state>
       </provider>
