@@ -19,91 +19,14 @@ public class OthelloBoard {
     private int numWhitePieces = 0;
     private int numBlackPieces = 0;
 
-    // Stores which positions are valid next moves for each line for white
-    // The key of value (most significant) store valid locations, and its corresponding key is the flip pattern
-    private static List<Map<Short, Map<Integer, Short>>> flipMapWhite;
-
-    // Stores which positions are valid next moves for each line for black
-    private static List<Map<Short, Map<Integer, Short>>> flipMapBlack;
-
+    // key is the line, value is the valid position -> pieces to flip map
     private static Map<String, Map<Integer, Set<Integer>>> cacheMapBlack;
     private static Map<String, Map<Integer, Set<Integer>>> cacheMapWhite;
 
-    private static short[] flipPatternToAdder;
-
     static {
-        // Use max in case we want rectangular boards (although I doubt it makes sense)
-        flipMapWhite = new ArrayList<>(Math.max(WIDTH, HEIGHT));
-        flipMapBlack = new ArrayList<>(Math.max(WIDTH, HEIGHT));
-        for (int i = 0; i < Math.max(WIDTH, HEIGHT); i++) {
-            flipMapWhite.add(new HashMap<>());
-            flipMapBlack.add(new HashMap<>());
-        }
-
         cacheMapBlack = new HashMap<>();
         cacheMapWhite = new HashMap<>();
         countFlipAll();
-
-        initializeAdder();
-    }
-
-    private static void initializeAdder() {
-        flipPatternToAdder = new short[256]; // 256 is the number of variations of byte
-        // NO need to convert for 0 here
-        for (int i = 1; i < flipPatternToAdder.length; i++) {
-            String binString = Integer.toBinaryString(i);
-            short result = 0;
-            for (int j = 0; j < binString.length(); j++) {
-                if (binString.charAt(j) == '1') {
-                    result += (1 << (j * 2));
-                }
-            }
-
-            flipPatternToAdder[i] = result;
-        }
-    }
-
-    private static void calculateFlipMap() {
-        // TODO how to enumerate all possibilities?
-        for (int len = 8; len >= 3; len--) {
-            for (int i = 0; i < Math.pow(3, len); i++) {
-                String thirdString = Integer.toString(i, 3);
-                short curLine = Short.parseShort(thirdString, 4);
-                Map<Integer, Short> retVal = findFlipSequence(curLine, len, true);
-                Map<Integer, Short> retVal2 = findFlipSequence(curLine, len, false);
-                if (!retVal.isEmpty())
-                    flipMapBlack.get(len).put(curLine, retVal);
-                if (!retVal2.isEmpty())
-                    flipMapWhite.get(len).put(curLine, retVal2);
-
-            }
-        }
-    }
-
-    private static Map<Integer, Short> findFlipSequence(short line, int length, boolean isFirst) {
-        short selfPiece = isFirst ? BLACK_PIECE : WHITE_PIECE;
-        short oppPiece = isFirst ? WHITE_PIECE : BLACK_PIECE;
-        Map<Integer, Short> returnVal = new HashMap<>();
-        for (int i = 0; i < length; i++) {
-            short currentPiece = (short) ((line << (14 - i*2)) >> 14);
-            if (currentPiece != NO_PIECE)
-                continue;
-            for (int j = i + 1; j < length; j++) {
-                short curPiece = (short) ((line << (14 - j*2)) >> 14);
-                if (curPiece == selfPiece && j > i + 1) {
-                    short flipper = 0;
-                    for (int k = i + 1; k < j; k++) {
-                        flipper += (1 << (k*2));
-                    }
-                    returnVal.put(i, flipper);
-                    break;
-                } else if (curPiece == NO_PIECE)
-                    break;
-            }
-        }
-        // todo need another pass
-
-        return returnVal;
     }
 
     private static void countFlipAll() {
@@ -117,15 +40,16 @@ public class OthelloBoard {
                 Map<Integer, Set<Integer>> result = countFlipSingle(next, true);
                 Map<Integer, Set<Integer>> result2 = countFlipSingle(next, false);
                 if (!result.isEmpty())
-                    cacheMapWhite.put(next, result);
-                if (!result2.isEmpty())
                     cacheMapBlack.put(next, result);
+                if (!result2.isEmpty())
+                    cacheMapWhite.put(next, result2);
             } while (!(next = nextStr(next)).isEmpty());
         }
     }
 
     /**
      * Find next 3-radix string using elementary-school arithmetic
+     *
      * @param str
      * @return
      */
@@ -142,6 +66,7 @@ public class OthelloBoard {
                 return sb.toString();
             } else
                 sb.setCharAt(counter, '0');
+            counter++;
         }
 
         return "";
@@ -157,12 +82,14 @@ public class OthelloBoard {
                 continue;
             for (int j = i + 1; j < str.length(); j++) {
                 char innerPiece = str.charAt(j);
-                if (innerPiece == selfPiece && j > i + 1) {
-                    Set<Integer> s = new HashSet<>();
-                    for (int k = i + 1; k < j; k++) {
-                        s.add(k);
-                    }
-                    returnVal.put(i, s);
+                if (innerPiece == selfPiece) {
+                    if (j > i + 1) {
+                        Set<Integer> s = new HashSet<>();
+                        for (int k = i + 1; k < j; k++) {
+                            s.add(k);
+                        }
+                        returnVal.put(i, s);
+                    } else break;
                 } else if (innerPiece == '0')
                     break;
             }
@@ -172,20 +99,22 @@ public class OthelloBoard {
             char curPiece = str.charAt(i);
             if (curPiece != '0')
                 continue;
-            for (int j = i - 1; j >= 0 ; j--) {
+            for (int j = i - 1; j >= 0; j--) {
                 char innerPiece = str.charAt(j);
-                if (innerPiece == selfPiece && j < i - 1) {
-                    Set<Integer> s = new HashSet<>();
-                    for (int k = i - 1; k > j; k--) {
-                        s.add(k);
-                    }
-                    if (!returnVal.containsKey(i))
-                        returnVal.put(i, s);
-                    else {
-                        // Can flip from two directions
-                        s.addAll(returnVal.get(i));
-                        returnVal.put(i, s);
-                    }
+                if (innerPiece == selfPiece) {
+                    if (j < i - 1) {
+                        Set<Integer> s = new HashSet<>();
+                        for (int k = i - 1; k > j; k--) {
+                            s.add(k);
+                        }
+                        if (!returnVal.containsKey(i))
+                            returnVal.put(i, s);
+                        else {
+                            // Can flip from two directions
+                            s.addAll(returnVal.get(i));
+                            returnVal.put(i, s);
+                        }
+                    } else break;
                 } else if (innerPiece == '0')
                     break;
             }
@@ -210,6 +139,7 @@ public class OthelloBoard {
                 grid[i][j] = '0';
             }
         }
+        initialUpdate();
     }
 
     public void reset() {
@@ -223,6 +153,16 @@ public class OthelloBoard {
         }
         numWhitePieces = 0;
         numBlackPieces = 0;
+    }
+
+    private void initialUpdate() {
+        grid[WIDTH / 2 - 1][HEIGHT / 2 - 1] = '1';
+        grid[WIDTH / 2 - 1][HEIGHT / 2] = '2';
+        grid[WIDTH / 2][HEIGHT / 2 - 1] = '2';
+        grid[WIDTH / 2][HEIGHT / 2] = '1';
+        countMobility(true);
+        numBlackPieces = 2;
+        numWhitePieces = 2;
     }
 
     public boolean updateBoard(int move, boolean isFirst) {
@@ -242,19 +182,27 @@ public class OthelloBoard {
         String rlDiag = getRLDiag(rlDiagIdx);
         Set<Integer> flipSet = new HashSet<>();
 
-        // map MUST contains row, col, diag
-        for (int i : map.get(row).get(colIndex))
-            flipSet.add(rowIndex * WIDTH + i);
-        for (int j : map.get(col).get(rowIndex))
-            flipSet.add(j * WIDTH + colIndex);
-        for (int m : map.get(lrDiag).get(idxOnLR))
-            flipSet.add(lrDiagToBoardPosition(lrDiagIdx, m));
-        for (int n : map.get(rlDiag).get(idxOnRL))
-            flipSet.add(rlDiagToBoardPosition(rlDiagIdx, n));
+        // map does not necessarily contain row, col, diag since there might not be capture on all lines
+        if (map.containsKey(row))
+            for (int i : map.get(row).get(colIndex))
+                flipSet.add(rowIndex * WIDTH + i);
+        if (map.containsKey(col))
+            for (int j : map.get(col).get(rowIndex))
+                flipSet.add(j * WIDTH + colIndex);
+        if (map.containsKey(lrDiag))
+            for (int m : map.get(lrDiag).get(idxOnLR))
+                flipSet.add(lrDiagToBoardPosition(lrDiagIdx, m));
+        if (map.containsKey(rlDiag))
+            for (int n : map.get(rlDiag).get(idxOnRL))
+                flipSet.add(rlDiagToBoardPosition(rlDiagIdx, n));
 
         for (int p : flipSet)
             flip(p);
         grid[rowIndex][colIndex] = piece;
+
+        // Don't forget to update the count here
+        if (isFirst) numBlackPieces++;
+        else numWhitePieces++;
 
         // Next turn is the opponent's
         countMobility(!isFirst);
@@ -328,7 +276,7 @@ public class OthelloBoard {
         int startColIdx = index < WIDTH ? WIDTH - 1 - index : 0; // can use Math.min(..., ...)
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < diagLen; i++) {
-            sb.append(grid[startRowIdx+i][startColIdx+i]);
+            sb.append(grid[startRowIdx + i][startColIdx + i]);
         }
         return sb.toString();
     }
@@ -339,7 +287,7 @@ public class OthelloBoard {
         int startColIdx = index < WIDTH ? index : WIDTH - 1;
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < diagLen; i++) {
-            sb.append(grid[startRowIdx+i][startColIdx-i]);
+            sb.append(grid[startRowIdx + i][startColIdx - i]);
         }
         return sb.toString();
     }
@@ -350,13 +298,19 @@ public class OthelloBoard {
 
     /**
      * Must be a valid input
+     *
      * @param move
      */
     private void flip(int move) {
-        if (grid[move / WIDTH][move % WIDTH] == '1')
+        if (grid[move / WIDTH][move % WIDTH] == '1') {
             grid[move / WIDTH][move % WIDTH] = '2';
-        else
+            numBlackPieces--;
+            numWhitePieces++;
+        } else {
             grid[move / WIDTH][move % WIDTH] = '1';
+            numBlackPieces++;
+            numWhitePieces--;
+        }
     }
 
     private int getltorDiagIndex(int position) {
@@ -406,6 +360,30 @@ public class OthelloBoard {
             int rowIndex = (rlIndex - WIDTH + 1) + indexOnRL;
             int colIndex = WIDTH - 1 - indexOnRL;
             return rowIndex * WIDTH + colIndex;
+        }
+    }
+
+    public void render() {
+        System.out.println("   1 2 3 4 5 6 7 8");
+        char firstPlayerChar = '\u25CF';
+        char secondPlayerChar = '\u25CB';
+        char emptyLocChar = '\u25A1';
+
+        for (int i = 0; i < grid.length; i++) {
+            System.out.print(i + 1);
+            if (i < 9)
+                System.out.print("\u0020\u0020");
+            else
+                System.out.print("\u0020");
+            for (int j = 0; j < grid[0].length; j++) {
+                if (grid[i][j] == '0')
+                    System.out.print(emptyLocChar + "\u0020");
+                else if (grid[i][j] == '1')
+                    System.out.print(firstPlayerChar + "\u0020");
+                else
+                    System.out.print(secondPlayerChar + "\u0020");
+            }
+            System.out.print('\n');
         }
     }
 }
