@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f2ab3abd-8a69-44e6-a31d-3d9ef1f3eb7d" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/algorithm/BoardTree.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/OthelloHero/app/Game.class" afterPath="$PROJECT_DIR$/out/production/OthelloHero/app/Game.class" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/OthelloHero/model/OthelloBoard.class" afterPath="$PROJECT_DIR$/out/production/OthelloHero/model/OthelloBoard.class" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/app/Game.java" afterPath="$PROJECT_DIR$/src/app/Game.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/model/OthelloBoard.java" afterPath="$PROJECT_DIR$/src/model/OthelloBoard.java" />
@@ -16,24 +19,56 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="OthelloBoard.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="OthelloBoard.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-5801">
-              <caret line="21" column="73" lean-forward="false" selection-start-line="21" selection-start-column="73" selection-end-line="21" selection-end-column="73" />
+            <state relative-caret-position="1013">
+              <caret line="122" column="25" lean-forward="false" selection-start-line="122" selection-start-column="25" selection-end-line="122" selection-end-column="25" />
               <folding>
-                <element signature="e#10007#10008#0" expanded="true" />
-                <element signature="e#10085#10086#0" expanded="true" />
+                <element signature="e#5474#5475#0" expanded="true" />
+                <element signature="e#5501#5502#0" expanded="true" />
+                <element signature="e#5536#5537#0" expanded="true" />
+                <element signature="e#5590#5591#0" expanded="true" />
+                <element signature="e#5631#5632#0" expanded="true" />
+                <element signature="e#5690#5691#0" expanded="true" />
+                <element signature="e#5724#5725#0" expanded="true" />
+                <element signature="e#5766#5767#0" expanded="true" />
+                <element signature="e#12908#12909#0" expanded="true" />
+                <element signature="e#12986#12987#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Game.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="BoardTree.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/algorithm/BoardTree.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="920">
+              <caret line="104" column="45" lean-forward="false" selection-start-line="104" selection-start-column="45" selection-end-line="104" selection-end-column="45" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Game.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/app/Game.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="17" column="33" lean-forward="false" selection-start-line="17" selection-start-column="33" selection-end-line="17" selection-end-column="33" />
+            <state relative-caret-position="663">
+              <caret line="39" column="5" lean-forward="true" selection-start-line="39" selection-start-column="5" selection-end-line="39" selection-end-column="5" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="System.java" pinned="false" current-in-tab="false">
+        <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/lang/System.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="168">
+              <caret line="80" column="36" lean-forward="false" selection-start-line="80" selection-start-column="36" selection-end-line="80" selection-end-column="36" />
               <folding />
             </state>
           </provider>
@@ -62,8 +97,14 @@
     <findStrings>
       <find>initial</find>
       <find>countmobili</find>
-      <find>updateboard</find>
       <find>cacheMapWhite</find>
+      <find>updateboard</find>
+      <find>turn</find>
+      <find>getflipset</find>
+      <find>reset</find>
+      <find>gameover</find>
+      <find>withdraw</find>
+      <find>getf</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -78,8 +119,9 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/src/test/BoardTest.java" />
-        <option value="$PROJECT_DIR$/src/app/Game.java" />
+        <option value="$PROJECT_DIR$/src/algorithm/BoardTree.java" />
         <option value="$PROJECT_DIR$/src/model/OthelloBoard.java" />
+        <option value="$PROJECT_DIR$/src/app/Game.java" />
       </list>
     </option>
   </component>
@@ -275,7 +317,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -285,7 +326,7 @@
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32980973" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32980973" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -312,19 +353,20 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
+          <condition expression="map.get(row).get(colIndex) == null" language="JAVA" />
           <url>file://$PROJECT_DIR$/src/model/OthelloBoard.java</url>
-          <line>212</line>
+          <line>257</line>
           <properties />
-          <option name="timeStamp" value="5" />
+          <option name="timeStamp" value="16" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/model/OthelloBoard.java</url>
-          <line>168</line>
+          <url>file://$PROJECT_DIR$/src/algorithm/BoardTree.java</url>
+          <line>90</line>
           <properties />
-          <option name="timeStamp" value="13" />
+          <option name="timeStamp" value="22" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="15" />
+      <option name="time" value="27" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -333,14 +375,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/BoardTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="51">
-          <caret line="3" column="0" lean-forward="false" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -369,21 +403,57 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/app/Game.java">
+    <entry file="file://$PROJECT_DIR$/src/test/BoardTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="289">
-          <caret line="17" column="33" lean-forward="false" selection-start-line="17" selection-start-column="33" selection-end-line="17" selection-end-column="33" />
+        <state relative-caret-position="51">
+          <caret line="3" column="0" lean-forward="false" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/lang/System.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="168">
+          <caret line="80" column="36" lean-forward="false" selection-start-line="80" selection-start-column="36" selection-end-line="80" selection-end-column="36" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/model/OthelloBoard.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-5801">
-          <caret line="21" column="73" lean-forward="false" selection-start-line="21" selection-start-column="73" selection-end-line="21" selection-end-column="73" />
+        <state relative-caret-position="1013">
+          <caret line="122" column="25" lean-forward="false" selection-start-line="122" selection-start-column="25" selection-end-line="122" selection-end-column="25" />
           <folding>
-            <element signature="e#10007#10008#0" expanded="true" />
-            <element signature="e#10085#10086#0" expanded="true" />
+            <element signature="e#5474#5475#0" expanded="true" />
+            <element signature="e#5501#5502#0" expanded="true" />
+            <element signature="e#5536#5537#0" expanded="true" />
+            <element signature="e#5590#5591#0" expanded="true" />
+            <element signature="e#5631#5632#0" expanded="true" />
+            <element signature="e#5690#5691#0" expanded="true" />
+            <element signature="e#5724#5725#0" expanded="true" />
+            <element signature="e#5766#5767#0" expanded="true" />
+            <element signature="e#12908#12909#0" expanded="true" />
+            <element signature="e#12986#12987#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/algorithm/BoardTree.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="920">
+          <caret line="104" column="45" lean-forward="false" selection-start-line="104" selection-start-column="45" selection-end-line="104" selection-end-column="45" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/app/Game.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="663">
+          <caret line="39" column="5" lean-forward="true" selection-start-line="39" selection-start-column="5" selection-end-line="39" selection-end-column="5" />
+          <folding>
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>

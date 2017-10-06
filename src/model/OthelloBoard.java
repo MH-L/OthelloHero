@@ -5,19 +5,23 @@ import java.util.*;
 public class OthelloBoard {
     public static final int WIDTH = 8;
     public static final int HEIGHT = 8;
+    public static final int GAME_IN_PROGRESS = 10;
+    public static final int GAME_FINISHED_TIE = 12;
+    public static final int GAME_FINISHED_BLACK_WINS = 14;
+    public static final int GAME_FINISHED_WHITE_WINS = 16;
     private static final int NUM_LR_DIAGS = WIDTH + HEIGHT - 1;
     private static final int NUM_RL_DIAGS = WIDTH + HEIGHT - 1;
-    private static final short BLACK_PIECE = 1;
-    private static final short WHITE_PIECE = 2;
-    private static final short NO_PIECE = 0;
-    private short[] rows;
-    private short[] cols;
-    private short[] ltorDiags;
-    private short[] rtolDiags;
     private char[][] grid;
-    private Set<Integer> mobility;
-    private int numWhitePieces = 0;
+    private Set<Integer> blackMobility;
+    private Set<Integer> whiteMobility;
+    private List<Integer> moveSequence;
+    private List<Boolean> turnHistory;
+    private Map<Integer, Set<Integer>> historicalFlips;
     private int numBlackPieces = 0;
+    private int numWhitePieces = 0;
+
+    // active player: true = black, false = white
+    private boolean turn = true;
 
     // key is the line, value is the valid position -> pieces to flip map
     private static Map<String, Map<Integer, Set<Integer>>> cacheMapBlack;
@@ -89,7 +93,8 @@ public class OthelloBoard {
                             s.add(k);
                         }
                         returnVal.put(i, s);
-                    } else break;
+                    }
+                    break;
                 } else if (innerPiece == '0')
                     break;
             }
@@ -114,7 +119,8 @@ public class OthelloBoard {
                             s.addAll(returnVal.get(i));
                             returnVal.put(i, s);
                         }
-                    } else break;
+                    }
+                    break;
                 } else if (innerPiece == '0')
                     break;
             }
@@ -127,11 +133,11 @@ public class OthelloBoard {
      * Constructor
      */
     public OthelloBoard() {
-        rows = new short[HEIGHT];
-        cols = new short[WIDTH];
-        ltorDiags = new short[HEIGHT + WIDTH - 1];
-        rtolDiags = new short[HEIGHT + WIDTH - 1];
-        mobility = new HashSet<>();
+        blackMobility = new HashSet<>();
+        whiteMobility = new HashSet<>();
+        historicalFlips = new HashMap<>();
+        moveSequence = new ArrayList<>();
+        turnHistory = new ArrayList<>();
 
         grid = new char[8][8];
         for (int i = 0; i < grid.length; i++) {
@@ -142,8 +148,42 @@ public class OthelloBoard {
         initialUpdate();
     }
 
+    public int gameOver() {
+        if (blackMobility.isEmpty() && whiteMobility.isEmpty()) {
+            if (numBlackPieces == numWhitePieces)
+                return GAME_FINISHED_TIE;
+            else if (numBlackPieces > numWhitePieces)
+                return GAME_FINISHED_BLACK_WINS;
+            else
+                return GAME_FINISHED_WHITE_WINS;
+        }
+
+        return GAME_IN_PROGRESS;
+    }
+
+    public boolean getTurn() {
+        return turn;
+    }
+
+    public int evaluateSimple() {
+        return numBlackPieces - numWhitePieces;
+    }
+
+    public Set<Integer> getMobility() {
+        return turn ? blackMobility : whiteMobility;
+    }
+
+    public int getPieceCount() {
+        return moveSequence.size();
+    }
+
     public void reset() {
-        mobility.clear();
+        blackMobility.clear();
+        whiteMobility.clear();
+        historicalFlips.clear();
+        moveSequence.clear();
+        turnHistory.clear();
+        turn = true;
 
         // reset grid
         for (int i = 0; i < grid.length; i++) {
@@ -151,8 +191,7 @@ public class OthelloBoard {
                 grid[i][j] = '0';
             }
         }
-        numWhitePieces = 0;
-        numBlackPieces = 0;
+        initialUpdate();
     }
 
     private void initialUpdate() {
@@ -163,13 +202,45 @@ public class OthelloBoard {
         countMobility(true);
         numBlackPieces = 2;
         numWhitePieces = 2;
+        blackMobility = countMobility(true);
+        whiteMobility = countMobility(false);
     }
 
-    public boolean updateBoard(int move, boolean isFirst) {
-        if (!mobility.contains(move))
+    public boolean updateBoard(int move) {
+        if ((turn && !blackMobility.contains(move)) || (!turn && !whiteMobility.contains(move)))
             return false;
-        char piece = isFirst ? '1' : '2';
-        Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
+        char piece = turn ? '1' : '2';
+
+        int rowIndex = move / WIDTH;
+        int colIndex = move % WIDTH;
+        Set<Integer> flipSet = getFlipSet(move);
+        moveSequence.add(move);
+        historicalFlips.put(move, flipSet);
+        for (int p : flipSet)
+            flip(p);
+        grid[rowIndex][colIndex] = piece;
+        turnHistory.add(turn);
+
+        // Don't forget to update the count here
+        if (turn) numBlackPieces++;
+        else numWhitePieces++;
+
+        // Next turn is the opponent's
+        whiteMobility = countMobility(false);
+        blackMobility = countMobility(true);
+
+        turn = !turn;
+        // The player with no mobility has to give up their turn
+        if (whiteMobility.isEmpty())
+            turn = true;
+        else if (blackMobility.isEmpty())
+            turn = false;
+
+        return true;
+    }
+
+    public Set<Integer> getFlipSet(int move) {
+        Map<String, Map<Integer, Set<Integer>>> map = turn ? cacheMapBlack : cacheMapWhite;
         int rowIndex = move / WIDTH;
         int colIndex = move % WIDTH;
         int lrDiagIdx = getltorDiagIndex(move);
@@ -183,34 +254,48 @@ public class OthelloBoard {
         Set<Integer> flipSet = new HashSet<>();
 
         // map does not necessarily contain row, col, diag since there might not be capture on all lines
-        if (map.containsKey(row))
+        if (map.containsKey(row) && map.get(row).containsKey(colIndex))
             for (int i : map.get(row).get(colIndex))
                 flipSet.add(rowIndex * WIDTH + i);
-        if (map.containsKey(col))
+        if (map.containsKey(col) && map.get(col).containsKey(rowIndex))
             for (int j : map.get(col).get(rowIndex))
                 flipSet.add(j * WIDTH + colIndex);
-        if (map.containsKey(lrDiag))
+        if (map.containsKey(lrDiag) && map.get(lrDiag).containsKey(idxOnLR))
             for (int m : map.get(lrDiag).get(idxOnLR))
                 flipSet.add(lrDiagToBoardPosition(lrDiagIdx, m));
-        if (map.containsKey(rlDiag))
+        if (map.containsKey(rlDiag) && map.get(rlDiag).containsKey(idxOnRL))
             for (int n : map.get(rlDiag).get(idxOnRL))
                 flipSet.add(rlDiagToBoardPosition(rlDiagIdx, n));
-
-        for (int p : flipSet)
-            flip(p);
-        grid[rowIndex][colIndex] = piece;
-
-        // Don't forget to update the count here
-        if (isFirst) numBlackPieces++;
-        else numWhitePieces++;
-
-        // Next turn is the opponent's
-        countMobility(!isFirst);
-        return true;
+        return flipSet;
     }
 
-    private void countMobility(boolean isFirst) {
-        mobility.clear();
+    /** withdraw is only valid if the last move is withdrawn
+     *  withdraw the last move
+     */
+    public void withdraw() {
+        if (moveSequence.isEmpty())
+            return;
+        // TODO potential inefficiency
+        int lastMove = moveSequence.get(moveSequence.size() - 1);
+        moveSequence.remove((Integer) lastMove);
+        Set<Integer> flipped = historicalFlips.remove(lastMove);
+        if (grid[lastMove / WIDTH][lastMove % WIDTH] == '1')
+            numBlackPieces--;
+        else
+            numWhitePieces--;
+        grid[lastMove / WIDTH][lastMove % WIDTH] = '0';
+        for (int loc : flipped) {
+            flip(loc);
+        }
+
+        blackMobility = countMobility(true);
+        whiteMobility = countMobility(false);
+        turn = turnHistory.get(turnHistory.size() - 1);
+        turnHistory.remove(turnHistory.size() - 1);
+    }
+
+    private Set<Integer> countMobility(boolean isFirst) {
+        Set<Integer> mobility = new HashSet<>();
         Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
 
         // Rows
@@ -252,6 +337,8 @@ public class OthelloBoard {
                     mobility.add(rlDiagToBoardPosition(i, mob));
             }
         }
+
+        return mobility;
     }
 
     private String getRow(int index) {
