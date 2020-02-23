@@ -1,5 +1,6 @@
 package algorithm;
 
+import model.Hasher;
 import model.OthelloBoard;
 
 import java.util.*;
@@ -8,12 +9,16 @@ public class BoardTree {
     public static final int WINNING_SCORE = 10000; // A winning score is still needed in order to make the result more compelling.
     public static int updateCount = 0;
     public static int withdrawCount = 0;
+    public static int cacheHits = 0;
+    public static int totalEvals = 0;
+
+    private static final Map<Long, Integer> evalCache = new HashMap<>();
 //    private static final int[] EVAL_LIMITS = {100, 15, 12, 10, 8, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3};
     private static final int[] EVAL_LIMITS = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
 
-    public static int alphaBetaSillyImpl(OthelloBoard bd, int depth) {
+    public static int alphaBetaSilly(OthelloBoard bd, int depth) {
         long ck1 = System.currentTimeMillis();
-        int calcResult = alphaBetaSillyImpl(bd, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, new int[]{0}, 0);
+        int calcResult = alphaBetaSillyImpl(bd, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, new int[]{0}, 0, new HashMap<>());
         long ck2 = System.currentTimeMillis();
         System.out.println("Time elapsed (single-threaded): " + (ck2 - ck1) + " milliseconds");
         return calcResult;
@@ -37,8 +42,7 @@ public class BoardTree {
                 }
                 else
                 {
-//                    System.out.println("Remaining pieces: " + numRemaining);
-                    alphaBetaSillyImpl(newCopy, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, eval, 1);
+                    alphaBetaSillyImpl(newCopy, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, eval, 1, new HashMap<>());
                 }
 
                 if (eval[0] > curBest[0]) {
@@ -78,7 +82,7 @@ public class BoardTree {
      * @return a board position indicating the best move
      */
     private static int alphaBetaSillyImpl(OthelloBoard bd, int depth, int alpha,
-                                          int beta, int[] value, int curDepth) {
+                                          int beta, int[] value, int curDepth, HashMap<Long, Integer> evalCache) {
         // TODO after 40 moves or so, use exhaustive evaluation
         int gameRes = bd.gameOver();
         if (gameRes != OthelloBoard.GAME_IN_PROGRESS) {
@@ -131,82 +135,90 @@ public class BoardTree {
         });
 
         int bestMove = -1;
-        if (maximizing) {
-            int maxVal = Integer.MIN_VALUE;
-            int limit = EVAL_LIMITS[curDepth];
-            int moveCtr = 0;
-            for (int move : nmsorted) {
-                if (moveCtr > limit) {
-                    break;
-                }
-                boolean result = bd.updateBoard(move);
+        long hashVal = Hasher.hash(bd);
+
+        totalEvals++;
+        // TODO board configuration doesn't necessarily dictate turn
+        // so we might need to configure eval cache by color
+        if (evalCache.containsKey(hashVal)) // First-level boards never hit this condition
+        {
+            value[0] = evalCache.get(hashVal);
+            cacheHits++;
+        }
+        else {
+            if (maximizing) {
+                int maxVal = Integer.MIN_VALUE;
+                int limit = EVAL_LIMITS[curDepth];
+                int moveCtr = 0;
+                for (int move : nmsorted) {
+                    if (moveCtr > limit) {
+                        break;
+                    }
+                    bd.updateBoard(move);
 //                if (!result) {
 //                    System.out.println("Update rejected, move: " + move);
 //                    System.out.println("Turn: " + bd.getTurn());
 //                    bd.render();
 //                }
-                updateCount++;
-                alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1);
-                if (value[0] > maxVal) {
-                    maxVal = value[0];
-                    bestMove = move;
+                    updateCount++;
+                    alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1, evalCache);
+                    if (value[0] > maxVal) {
+                        maxVal = value[0];
+                        bestMove = move;
+                    }
+
+                    bd.withdraw();
+                    withdrawCount++;
+                    alpha = Math.max(alpha, maxVal);
+                    if (beta <= alpha)
+                        break;
+                    moveCtr++;
                 }
 
-                bd.withdraw();
-                withdrawCount++;
-                alpha = Math.max(alpha, maxVal);
-                if (beta <= alpha)
-                    break;
-                moveCtr++;
-            }
-
-            if (curDepth == 1)
-            {
-                int randomPurt = new Random().nextInt(11) - 5;
-                value[0] = maxVal + randomPurt;
-                System.out.println("Randomization in play here, score: " + (maxVal + randomPurt));
-            }
-            else
-            {
-                value[0] = maxVal;
-            }
-        } else {
-            int minVal = Integer.MAX_VALUE;
-            int limit = EVAL_LIMITS[curDepth];
-            int moveCtr = 0;
-            for (int move : nmsorted) {
-                if (moveCtr > limit) {
-                    break;
+                if (curDepth == 1) {
+                    int randomPurt = new Random().nextInt(11) - 5;
+                    value[0] = maxVal + randomPurt;
+                    System.out.println("Randomization in play here, score: " + (maxVal + randomPurt));
+                } else {
+                    value[0] = maxVal;
+                    evalCache.put(hashVal, maxVal);
                 }
-                boolean result = bd.updateBoard(move);
+            } else {
+                int minVal = Integer.MAX_VALUE;
+                int limit = EVAL_LIMITS[curDepth];
+                int moveCtr = 0;
+                for (int move : nmsorted) {
+                    if (moveCtr > limit) {
+                        break;
+                    }
+                    bd.updateBoard(move);
 //                if (!result) {
 //                    System.out.println("Update rejected, move: " + move);
 //                    System.out.println("Turn: " + bd.getTurn());
 //                    bd.render();
 //                }
-                updateCount++;
-                alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1);
-                if (value[0] < minVal) {
-                    minVal = value[0];
-                    bestMove = move;
+                    updateCount++;
+                    alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1, evalCache);
+                    if (value[0] < minVal) {
+                        minVal = value[0];
+                        bestMove = move;
+                    }
+                    bd.withdraw();
+                    withdrawCount++;
+                    beta = Math.min(beta, minVal);
+                    if (beta <= alpha)
+                        break;
+                    moveCtr++;
                 }
-                bd.withdraw();
-                withdrawCount++;
-                beta = Math.min(beta, minVal);
-                if (beta <= alpha)
-                    break;
-                moveCtr++;
-            }
 
-            if (curDepth == 1)
-            {
-                int randomPurt = new Random().nextInt(11) - 5;
-                value[0] = minVal + randomPurt;
-                System.out.println("Randomization in play here, score: " + (minVal + randomPurt));
-            }
-            else
-            {
-                value[0] = minVal;
+                if (curDepth == 1) {
+                    int randomPurt = new Random().nextInt(11) - 5;
+                    value[0] = minVal + randomPurt;
+                    System.out.println("Randomization in play here, score: " + (minVal + randomPurt));
+                } else {
+                    value[0] = minVal;
+                    evalCache.put(hashVal, minVal);
+                }
             }
         }
 

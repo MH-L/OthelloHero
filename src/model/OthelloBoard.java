@@ -12,7 +12,7 @@ public class OthelloBoard {
     private static final int NUM_LR_DIAGS = WIDTH + HEIGHT - 1;
     private static final int NUM_RL_DIAGS = WIDTH + HEIGHT - 1;
     private static final Set<Integer> corners;
-    private char[][] grid; // '0' for unoccupied, '1' for black, and '2' for white
+    protected char[][] grid; // '0' for unoccupied, '1' for black, and '2' for white
     private Set<Integer> blackMobility;
     private Set<Integer> whiteMobility;
     private List<Integer> moveSequence;

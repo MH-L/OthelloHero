@@ -10,7 +10,7 @@ public class SelfRun {
             experimentBoard.reset();
             System.out.println("Playing game " + (i + 1));
             while (experimentBoard.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
-                int optimalMove = BoardTree.alphaBetaSillyImpl(experimentBoard, 7);
+                int optimalMove = BoardTree.alphaBetaSilly(experimentBoard, 7);
                 experimentBoard.updateBoard(optimalMove);
                 experimentBoard.render();
             }

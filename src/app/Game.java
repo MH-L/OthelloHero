@@ -7,9 +7,9 @@ import java.util.Scanner;
 
 public class Game {
     public static void main(String[] args) {
-        playInteractively();
+//        playInteractively();
 
-//        selfPlay(25);
+        selfPlay(25);
 //        OthelloBoard ob = new OthelloBoard();
 //        long curTime = System.currentTimeMillis();
 //        ob.updateBoard(34);
@@ -88,6 +88,8 @@ public class Game {
         int wtWins = 0;
         int drawCnt = 0;
         for (int i = 0; i < rounds; i++) {
+            BoardTree.cacheHits = 0;
+            BoardTree.totalEvals = 0;
             OthelloBoard board = new OthelloBoard();
             while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
                 if (board.getTurn()) {
@@ -96,11 +98,14 @@ public class Game {
                     System.out.println("Black move finished, board configuration:");
                     board.render();
                 } else {
-                    int optimal = BoardTree.alphaBetaSillyImpl(board, 7);
+                    int optimal = BoardTree.alphaBetaSilly(board, 7);
                     board.updateBoard(optimal);
                     System.out.println("White move finished, board configuration:");
                     board.render();
                 }
+
+                System.out.println("Transposition table cache hit count (game so far): " + BoardTree.cacheHits);
+                System.out.println("Total evals count (game so far): " + BoardTree.totalEvals);
             }
 
             System.out.println("Game finished, here is the stats: ");
