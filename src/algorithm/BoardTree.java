@@ -11,6 +11,7 @@ public class BoardTree {
     public static int withdrawCount = 0;
     public static int cacheHits = 0;
     public static int totalEvals = 0;
+    public static int savedCnt = 0;
 
     private static final Map<Long, Integer> evalCache = new HashMap<>();
 //    private static final int[] EVAL_LIMITS = {100, 15, 12, 10, 8, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3};
@@ -112,27 +113,32 @@ public class BoardTree {
         Set<Integer> nextMoves = bd.getMobility();
 
         List<Integer> nmsorted = new ArrayList<>();
-        Map<Integer, Integer> incMap = new HashMap<>();
-        for (int mv : nextMoves) {
-            int inc = bd.getInc(mv); // Gets increment in heuristics
-            incMap.put(mv, inc);
-            // TODO investigate whether or not to implement move-filtering
-            nmsorted.add(mv);
-            // TODO add direct pruning based on inc here after evaluation function is complete.
-        }
-
-        if (nmsorted.isEmpty())
-            nmsorted.addAll(nextMoves);
-        nmsorted.sort(new Comparator<Integer>() { // Moves with more potentials get evaluated first
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                int v1 = incMap.get(o1);
-                int v2 = incMap.get(o2);
-                if (v1 == v2)
-                    return 0;
-                return v1 > v2 ? -1 : 1;
+        if (depth > 1) {
+            Map<Integer, Integer> incMap = new HashMap<>();
+            for (int mv : nextMoves) {
+                int inc = bd.getInc(mv); // Gets increment in heuristics
+                incMap.put(mv, inc);
+                // TODO investigate whether or not to implement move-filtering
+                nmsorted.add(mv);
+                // TODO add direct pruning based on inc here after evaluation function is complete.
             }
-        });
+
+            if (nmsorted.isEmpty())
+                nmsorted.addAll(nextMoves);
+            nmsorted.sort(new Comparator<Integer>() { // Moves with more potentials get evaluated first
+                @Override
+                public int compare(Integer o1, Integer o2) {
+                    int v1 = incMap.get(o1);
+                    int v2 = incMap.get(o2);
+                    if (v1 == v2)
+                        return 0;
+                    return v1 > v2 ? -1 : 1;
+                }
+            });
+        } else {
+            savedCnt ++;
+            nmsorted.addAll(nextMoves);
+        }
 
         int bestMove = -1;
         long hashVal = Hasher.hash(bd);

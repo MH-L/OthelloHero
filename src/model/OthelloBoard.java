@@ -253,12 +253,16 @@ public class OthelloBoard {
         // 3) corners occupied for each side
         // 4) unstable pieces for each side
 //        int pieceDiff = (int) (100 * (double) (numBlackPieces - numWhitePieces) / (double) (numBlackPieces + numWhitePieces));
-        int pieceDiff = getPieceDiff() * 15; // originally, the constant was 10
+
+        // TODO calculate frontier disks
+        int pieceDiff = getPieceDiff() * 2; // originally, the constant was 10
         int mobilityDiff = (int) (100 * ((double) (blackMobility.size() - whiteMobility.size()) / (double) (blackMobility.size() + whiteMobility.size())));
         int cornerDiff = 25 * (blackCorners - whiteCorners);
         int flipProneDiff = (int) (100 * (double) (blackInstability - whiteInstability) / (double) (blackInstability + whiteInstability));
-        int badLocDiff = getBadLocOffset() * (getremainingPieces() / 4);
-        return (int) Math.round(0.1 * pieceDiff + 2 * mobilityDiff + 4 * cornerDiff - 1.5 * flipProneDiff);
+        int cornerAdj = 100 * getCornerAdjacency();
+//        int badLocDiff = getBadLocOffset() * (getremainingPieces() / 4);
+
+        return (int) Math.round((double) (pieceDiff + 2 * mobilityDiff + 40 * cornerDiff - 0.5 * flipProneDiff - 5 * cornerAdj) / 10.0);
     }
 
     private int getPieceDiff() {
@@ -273,21 +277,86 @@ public class OthelloBoard {
         return absScore;
     }
 
-    public int getremainingPieces() {
-        return WIDTH * HEIGHT - moveSequence.size() - 4; // initially there were 4 pieces on the board
-    }
+    private int getCornerAdjacency() {
+        int cornerAdj = 0;
 
-    private int getCornerDiff() {
-        char[] corners = {grid[0][0], grid[0][WIDTH - 1], grid[HEIGHT - 1][0], grid[HEIGHT - 1][WIDTH - 1]};
-        int blackCorners = 0, whiteCorners = 0;
-        for (int i = 0; i < 4; i++) {
-            if (corners[i] == '1')
-                blackCorners++;
-            else if (corners[i] == '2')
-                whiteCorners++;
+        if (grid[0][0] == '0')
+        {
+            if (grid[0][1] != '0')
+            {
+                cornerAdj += grid[0][1] == '1' ? 1 : -1;
+            }
+
+            if (grid[1][0] != '0')
+            {
+                cornerAdj += grid[1][0] == '1' ? 1 : -1;
+            }
+
+            if (grid[1][1] != '0')
+            {
+                cornerAdj += grid[1][1] == '1' ? 2 : -2; // X squares are +-2
+            }
         }
 
-        return blackCorners - whiteCorners;
+        if (grid[0][WIDTH - 1] == '0')
+        {
+            if (grid[0][WIDTH - 2] != '0')
+            {
+                cornerAdj += grid[0][WIDTH - 2] == '1' ? 1 : -1;
+            }
+
+            if (grid[1][WIDTH - 1] != '0')
+            {
+                cornerAdj += grid[1][WIDTH - 1] == '1' ? 1 : -1;
+            }
+
+            if (grid[1][WIDTH - 2] != '0')
+            {
+                cornerAdj += grid[1][WIDTH - 2] == '1' ? 2 : -2; // X squares are +-2
+            }
+        }
+
+        if (grid[HEIGHT - 1][0] == '0')
+        {
+            if (grid[HEIGHT - 1][1] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 1][1] == '1' ? 1 : -1;
+            }
+
+            if (grid[HEIGHT - 2][0] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 2][0] == '1' ? 1 : -1;
+            }
+
+            if (grid[HEIGHT - 2][1] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 2][1] == '1' ? 2 : -2; // X squares are +-2
+            }
+        }
+
+        if (grid[HEIGHT - 1][WIDTH - 1] == '0')
+        {
+            if (grid[HEIGHT - 2][WIDTH - 1] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 2][WIDTH - 1] == '1' ? 1 : -1;
+            }
+
+            if (grid[HEIGHT - 1][WIDTH - 2] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 1][WIDTH - 2] == '1' ? 1 : -1;
+            }
+
+            if (grid[HEIGHT - 2][WIDTH - 2] != '0')
+            {
+                cornerAdj += grid[HEIGHT - 2][WIDTH - 2] == '1' ? 2 : -2; // X squares are +-2
+            }
+        }
+
+        return cornerAdj;
+    }
+
+    public int getremainingPieces() {
+        return WIDTH * HEIGHT - moveSequence.size() - 4; // initially there were 4 pieces on the board
     }
 
     private int getBadLocOffset() {
@@ -305,10 +374,6 @@ public class OthelloBoard {
 
     public Set<Integer> getMobility() {
         return turn ? blackMobility : whiteMobility;
-    }
-
-    public int getPieceCount() {
-        return moveSequence.size();
     }
 
     public void reset() {
@@ -384,6 +449,7 @@ public class OthelloBoard {
     }
 
     public int getInc(int move) {
+        // TODO potential deficiency here
         int prev = evaluateIntermediate();
         updateBoard(move);
         int now = evaluateIntermediate();
