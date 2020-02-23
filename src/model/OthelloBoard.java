@@ -11,7 +11,8 @@ public class OthelloBoard {
     public static final int GAME_FINISHED_WHITE_WINS = 16;
     private static final int NUM_LR_DIAGS = WIDTH + HEIGHT - 1;
     private static final int NUM_RL_DIAGS = WIDTH + HEIGHT - 1;
-    private char[][] grid;
+    private static final Set<Integer> corners;
+    private char[][] grid; // '0' for unoccupied, '1' for black, and '2' for white
     private Set<Integer> blackMobility;
     private Set<Integer> whiteMobility;
     private List<Integer> moveSequence;
@@ -19,11 +20,41 @@ public class OthelloBoard {
     private Map<Integer, Set<Integer>> historicalFlips;
     private int numBlackPieces = 0;
     private int numWhitePieces = 0;
+    private int blackCorners = 0;
+    private int whiteCorners = 0;
+    private int blackInstability = 0;
+    private int whiteInstability = 0;
+
+    // Original scores:
+    // 20, -3, 11, 8, -7, 4, 1, 2, 2, -3
+    // The above scores are taken from someone else's work
+    private static final int TYPE_1_PV = 25;
+    private static final int TYPE_2_PV = -3;
+    private static final int TYPE_3_PV = 9;
+    private static final int TYPE_4_PV = 6;
+    private static final int TYPE_5_PV = -12;
+    private static final int TYPE_6_PV = -4;
+    private static final int TYPE_7_PV = 1;
+    private static final int TYPE_8_PV = 3;
+    private static final int TYPE_9_PV = 2;
+    private static final int TYPE_0_PV = -3;
+    private static final int[][] PIECE_VALUE_CHART =
+            {
+                    {TYPE_1_PV, TYPE_2_PV, TYPE_3_PV, TYPE_4_PV, TYPE_4_PV, TYPE_3_PV, TYPE_2_PV, TYPE_1_PV},
+                    {TYPE_2_PV, TYPE_5_PV, TYPE_6_PV, TYPE_7_PV, TYPE_7_PV, TYPE_6_PV, TYPE_5_PV, TYPE_2_PV},
+                    {TYPE_3_PV, TYPE_6_PV, TYPE_8_PV, TYPE_9_PV, TYPE_9_PV, TYPE_8_PV, TYPE_6_PV, TYPE_3_PV},
+                    {TYPE_4_PV, TYPE_7_PV, TYPE_9_PV, TYPE_0_PV, TYPE_0_PV, TYPE_9_PV, TYPE_7_PV, TYPE_4_PV},
+                    {TYPE_4_PV, TYPE_7_PV, TYPE_9_PV, TYPE_0_PV, TYPE_0_PV, TYPE_9_PV, TYPE_7_PV, TYPE_4_PV},
+                    {TYPE_3_PV, TYPE_6_PV, TYPE_8_PV, TYPE_9_PV, TYPE_9_PV, TYPE_8_PV, TYPE_6_PV, TYPE_3_PV},
+                    {TYPE_2_PV, TYPE_5_PV, TYPE_6_PV, TYPE_7_PV, TYPE_7_PV, TYPE_6_PV, TYPE_5_PV, TYPE_2_PV},
+                    {TYPE_1_PV, TYPE_2_PV, TYPE_3_PV, TYPE_4_PV, TYPE_4_PV, TYPE_3_PV, TYPE_2_PV, TYPE_1_PV},
+            };
 
     // active player: true = black, false = white
     private boolean turn = true;
 
     // key is the line, value is the valid position -> pieces to flip map
+    // they are fundamentals to our calculation so they should be static
     private static Map<String, Map<Integer, Set<Integer>>> cacheMapBlack;
     private static Map<String, Map<Integer, Set<Integer>>> cacheMapWhite;
 
@@ -31,6 +62,11 @@ public class OthelloBoard {
         cacheMapBlack = new HashMap<>();
         cacheMapWhite = new HashMap<>();
         countFlipAll();
+        corners = new HashSet<>();
+        corners.add(0);
+        corners.add(WIDTH - 1);
+        corners.add(WIDTH*HEIGHT - 1);
+        corners.add(WIDTH*(HEIGHT - 1));
     }
 
     private static void countFlipAll() {
@@ -53,9 +89,7 @@ public class OthelloBoard {
 
     /**
      * Find next 3-radix string using elementary-school arithmetic
-     *
-     * @param str
-     * @return
+     * @return the next 3-radix string
      */
     private static String nextStr(String str) {
         StringBuilder sb = new StringBuilder(str);
@@ -148,6 +182,41 @@ public class OthelloBoard {
         initialUpdate();
     }
 
+    public OthelloBoard(OthelloBoard other) {
+        blackMobility = new HashSet<>();
+        blackMobility.addAll(other.blackMobility);
+        whiteMobility = new HashSet<>();
+        whiteMobility.addAll(other.whiteMobility);
+        // Historical flips ignored because it's not important
+        historicalFlips = new HashMap<>();
+        moveSequence = new ArrayList<>();
+        moveSequence.addAll(other.moveSequence);
+        turnHistory = new ArrayList<>();
+        turnHistory.addAll(other.turnHistory);
+        grid = new char[8][8];
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[i].length; j++) {
+                grid[i][j] = other.grid[i][j];
+            }
+        }
+
+        numBlackPieces = other.numBlackPieces;
+        numWhitePieces = other.numWhitePieces;
+        blackCorners = other.blackCorners;
+        whiteCorners = other.whiteCorners;
+        blackInstability = other.blackInstability;
+        whiteInstability = other.whiteInstability;
+        turn = other.turn;
+    }
+
+    public int getNumBlack() {
+        return numBlackPieces;
+    }
+
+    public int getNumWhite() {
+        return numWhitePieces;
+    }
+
     public int gameOver() {
         if (blackMobility.isEmpty() && whiteMobility.isEmpty()) {
             if (numBlackPieces == numWhitePieces)
@@ -169,6 +238,71 @@ public class OthelloBoard {
         return numBlackPieces - numWhitePieces;
     }
 
+    public int evaluate(int option) {
+        if (option == 1)
+            return evaluateSimple();
+        if (option == 2)
+            return evaluateIntermediate();
+        return -1000;
+    }
+
+    public int evaluateIntermediate() {
+        // Considering the following 4 metrics:
+        // 1) pieces for each side
+        // 2) mobilities for each side (how many moves can be played for the next move)
+        // 3) corners occupied for each side
+        // 4) unstable pieces for each side
+//        int pieceDiff = (int) (100 * (double) (numBlackPieces - numWhitePieces) / (double) (numBlackPieces + numWhitePieces));
+        int pieceDiff = getPieceDiff() * 15; // originally, the constant was 10
+        int mobilityDiff = (int) (100 * ((double) (blackMobility.size() - whiteMobility.size()) / (double) (blackMobility.size() + whiteMobility.size())));
+        int cornerDiff = 25 * (blackCorners - whiteCorners);
+        int flipProneDiff = (int) (100 * (double) (blackInstability - whiteInstability) / (double) (blackInstability + whiteInstability));
+        int badLocDiff = getBadLocOffset() * (getremainingPieces() / 4);
+        return (int) Math.round(0.1 * pieceDiff + 2 * mobilityDiff + 4 * cornerDiff - 1.5 * flipProneDiff);
+    }
+
+    private int getPieceDiff() {
+        int absScore = 0;
+        for (int i = 0; i < grid.length; i++)
+        {
+            for (int j = 0; j < grid[i].length; j++)
+            {
+                absScore += (grid[i][j] == '1' ? PIECE_VALUE_CHART[i][j] : -PIECE_VALUE_CHART[i][j]);
+            }
+        }
+        return absScore;
+    }
+
+    public int getremainingPieces() {
+        return WIDTH * HEIGHT - moveSequence.size() - 4; // initially there were 4 pieces on the board
+    }
+
+    private int getCornerDiff() {
+        char[] corners = {grid[0][0], grid[0][WIDTH - 1], grid[HEIGHT - 1][0], grid[HEIGHT - 1][WIDTH - 1]};
+        int blackCorners = 0, whiteCorners = 0;
+        for (int i = 0; i < 4; i++) {
+            if (corners[i] == '1')
+                blackCorners++;
+            else if (corners[i] == '2')
+                whiteCorners++;
+        }
+
+        return blackCorners - whiteCorners;
+    }
+
+    private int getBadLocOffset() {
+        char[] corners = {grid[1][1], grid[1][WIDTH - 2], grid[HEIGHT - 2][1], grid[HEIGHT - 2][WIDTH - 2]};
+        int blackBad = 0, whiteBad = 0;
+        for (int i = 0; i < 4; i++) {
+            if (corners[i] == '1')
+                blackBad++;
+            else if (corners[i] == '2')
+                whiteBad++;
+        }
+
+        return blackBad - whiteBad;
+    }
+
     public Set<Integer> getMobility() {
         return turn ? blackMobility : whiteMobility;
     }
@@ -184,6 +318,10 @@ public class OthelloBoard {
         moveSequence.clear();
         turnHistory.clear();
         turn = true;
+        blackCorners = 0;
+        whiteCorners = 0;
+        blackInstability = 0;
+        whiteInstability = 0;
 
         // reset grid
         for (int i = 0; i < grid.length; i++) {
@@ -195,10 +333,10 @@ public class OthelloBoard {
     }
 
     private void initialUpdate() {
-        grid[WIDTH / 2 - 1][HEIGHT / 2 - 1] = '1';
-        grid[WIDTH / 2 - 1][HEIGHT / 2] = '2';
-        grid[WIDTH / 2][HEIGHT / 2 - 1] = '2';
-        grid[WIDTH / 2][HEIGHT / 2] = '1';
+        grid[WIDTH / 2 - 1][HEIGHT / 2 - 1] = '2';
+        grid[WIDTH / 2 - 1][HEIGHT / 2] = '1';
+        grid[WIDTH / 2][HEIGHT / 2 - 1] = '1';
+        grid[WIDTH / 2][HEIGHT / 2] = '2';
         countMobility(true);
         numBlackPieces = 2;
         numWhitePieces = 2;
@@ -210,6 +348,12 @@ public class OthelloBoard {
         if ((turn && !blackMobility.contains(move)) || (!turn && !whiteMobility.contains(move)))
             return false;
         char piece = turn ? '1' : '2';
+        if (corners.contains(move)) {
+            if (turn)
+                blackCorners++;
+            else
+                whiteCorners++;
+        }
 
         int rowIndex = move / WIDTH;
         int colIndex = move % WIDTH;
@@ -237,6 +381,14 @@ public class OthelloBoard {
             turn = false;
 
         return true;
+    }
+
+    public int getInc(int move) {
+        int prev = evaluateIntermediate();
+        updateBoard(move);
+        int now = evaluateIntermediate();
+        withdraw();
+        return now - prev;
     }
 
     public Set<Integer> getFlipSet(int move) {
@@ -269,8 +421,9 @@ public class OthelloBoard {
         return flipSet;
     }
 
-    /** withdraw is only valid if the last move is withdrawn
-     *  withdraw the last move
+    /**
+     * withdraw is only valid if the last move is withdrawn
+     * withdraw the last move
      */
     public void withdraw() {
         if (moveSequence.isEmpty())
@@ -278,14 +431,21 @@ public class OthelloBoard {
         // TODO potential inefficiency
         int lastMove = moveSequence.get(moveSequence.size() - 1);
         moveSequence.remove((Integer) lastMove);
-        Set<Integer> flipped = historicalFlips.remove(lastMove);
-        if (grid[lastMove / WIDTH][lastMove % WIDTH] == '1')
-            numBlackPieces--;
-        else
-            numWhitePieces--;
-        grid[lastMove / WIDTH][lastMove % WIDTH] = '0';
-        for (int loc : flipped) {
-            flip(loc);
+        if (historicalFlips.containsKey(lastMove)) {
+            Set<Integer> flipped = historicalFlips.remove(lastMove);
+            if (grid[lastMove / WIDTH][lastMove % WIDTH] == '1') {
+                numBlackPieces--;
+                if (corners.contains(lastMove))
+                    blackCorners--;
+            } else {
+                numWhitePieces--;
+                if (corners.contains(lastMove))
+                    whiteCorners--;
+            }
+            grid[lastMove / WIDTH][lastMove % WIDTH] = '0';
+            for (int loc : flipped) {
+                flip(loc);
+            }
         }
 
         blackMobility = countMobility(true);
@@ -296,15 +456,19 @@ public class OthelloBoard {
 
     private Set<Integer> countMobility(boolean isFirst) {
         Set<Integer> mobility = new HashSet<>();
+        Set<Integer> flipProne = new HashSet<>();
         Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
 
         // Rows
         for (int i = 0; i < HEIGHT; i++) {
             String row = getRow(i);
             if (map.containsKey(row)) {
-                Set<Integer> mobSet = map.get(row).keySet();
-                for (int mob : mobSet)
-                    mobility.add(i * WIDTH + mob);
+                for (Map.Entry<Integer, Set<Integer>> entry : map.get(row).entrySet()) {
+                    mobility.add(i * WIDTH + entry.getKey());
+                    for (int canFlip : entry.getValue()) {
+                        flipProne.add(i * WIDTH + canFlip);
+                    }
+                }
             }
         }
 
@@ -312,9 +476,12 @@ public class OthelloBoard {
         for (int i = 0; i < WIDTH; i++) {
             String col = getCol(i);
             if (map.containsKey(col)) {
-                Set<Integer> mobSet = map.get(col).keySet();
-                for (int mob : mobSet)
-                    mobility.add(mob * WIDTH + i);
+                for (Map.Entry<Integer, Set<Integer>> entry : map.get(col).entrySet()) {
+                    mobility.add(entry.getKey() * WIDTH + i);
+                    for (int canFlip : entry.getValue()) {
+                        flipProne.add(canFlip * WIDTH + i);
+                    }
+                }
             }
         }
 
@@ -322,9 +489,12 @@ public class OthelloBoard {
         for (int i = 0; i < NUM_LR_DIAGS; i++) {
             String lrDiag = getLRDiag(i);
             if (map.containsKey(lrDiag)) {
-                Set<Integer> mobSet = map.get(lrDiag).keySet();
-                for (int mob : mobSet)
-                    mobility.add(lrDiagToBoardPosition(i, mob));
+                for (Map.Entry<Integer, Set<Integer>> entry : map.get(lrDiag).entrySet()) {
+                    mobility.add(lrDiagToBoardPosition(i, entry.getKey()));
+                    for (int canFlip : entry.getValue()) {
+                        flipProne.add(lrDiagToBoardPosition(i, canFlip));
+                    }
+                }
             }
         }
 
@@ -332,11 +502,17 @@ public class OthelloBoard {
         for (int i = 0; i < NUM_RL_DIAGS; i++) {
             String rlDiag = getRLDiag(i);
             if (map.containsKey(rlDiag)) {
-                Set<Integer> mobSet = map.get(rlDiag).keySet();
-                for (int mob : mobSet)
-                    mobility.add(rlDiagToBoardPosition(i, mob));
+                for (Map.Entry<Integer, Set<Integer>> entry : map.get(rlDiag).entrySet()) {
+                    mobility.add(rlDiagToBoardPosition(i, entry.getKey()));
+                    for (int canFlip : entry.getValue()) {
+                        flipProne.add(rlDiagToBoardPosition(i, canFlip));
+                    }
+                }
             }
         }
+
+        if (isFirst) whiteInstability = flipProne.size();
+        else blackInstability = flipProne.size();
 
         return mobility;
     }
@@ -451,7 +627,7 @@ public class OthelloBoard {
     }
 
     public void render() {
-        System.out.println("   1 2 3 4 5 6 7 8");
+        System.out.println("   A B C D E F G H");
         char firstPlayerChar = '\u25CF';
         char secondPlayerChar = '\u25CB';
         char emptyLocChar = '\u25A1';

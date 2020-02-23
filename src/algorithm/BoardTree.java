@@ -8,28 +8,98 @@ public class BoardTree {
     public static final int WINNING_SCORE = 10000; // A winning score is still needed in order to make the result more compelling.
     public static int updateCount = 0;
     public static int withdrawCount = 0;
+//    private static final int[] EVAL_LIMITS = {100, 15, 12, 10, 8, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3};
+    private static final int[] EVAL_LIMITS = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
 
-    public static int alphaBetaSilly(OthelloBoard bd, int depth) {
-        return alphaBetaSilly(bd, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, new int[]{0});
+    public static int alphaBetaSillyImpl(OthelloBoard bd, int depth) {
+        long ck1 = System.currentTimeMillis();
+        int calcResult = alphaBetaSillyImpl(bd, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, new int[]{0}, 0);
+        long ck2 = System.currentTimeMillis();
+        System.out.println("Time elapsed (single-threaded): " + (ck2 - ck1) + " milliseconds");
+        return calcResult;
     }
 
-    private static int alphaBetaSilly(OthelloBoard bd, int depth, int alpha,
-                                     int beta, int[] value) {
+    public static int alphaBetaMulti(OthelloBoard bd, int depth) {
+        Set<Integer> nmoves = bd.getMobility();
+        int[] curBest = {Integer.MIN_VALUE};
+        int[] curOutput = {-1};
+        int numRemaining = bd.getremainingPieces();
+        List<Thread> startedThreads = new ArrayList<>();
+        for (int mv : nmoves) {
+            OthelloBoard newCopy = new OthelloBoard(bd);
+            newCopy.updateBoard(mv);
+            int[] eval = {0};
+            Thread t = new Thread(() -> {
+                if (numRemaining < 16)
+                {
+                    System.out.println("Applying brute force search...");
+                    bruteForce(newCopy, Integer.MIN_VALUE, Integer.MAX_VALUE, eval);
+                }
+                else
+                {
+//                    System.out.println("Remaining pieces: " + numRemaining);
+                    alphaBetaSillyImpl(newCopy, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, eval, 1);
+                }
+
+                if (eval[0] > curBest[0]) {
+                    curOutput[0] = mv;
+                    curBest[0] = eval[0];
+                }
+            });
+
+            t.start();
+            startedThreads.add(t);
+        }
+
+        System.out.println("Started multithreading calculation, number of threads: " + startedThreads.size());
+        long ck1 = System.currentTimeMillis();
+
+        for (Thread tojoin : startedThreads) {
+            try {
+                tojoin.join();
+            } catch (InterruptedException e) {
+                System.out.println("Bad thread join!");
+                e.printStackTrace();
+            }
+        }
+
+        long ck2 = System.currentTimeMillis();
+        System.out.println("Time elapsed (multithreading): " + (ck2 - ck1) + " milliseconds!");
+        return curOutput[0];
+    }
+
+    /**
+     * Doing alpha beta search in a naive way
+     * @param bd board
+     * @param depth number of plys to search, can't be over 15
+     * @param alpha alpha value
+     * @param beta beta value
+     * @param value the heuristic value calculated by the search
+     * @return a board position indicating the best move
+     */
+    private static int alphaBetaSillyImpl(OthelloBoard bd, int depth, int alpha,
+                                          int beta, int[] value, int curDepth) {
+        // TODO after 40 moves or so, use exhaustive evaluation
         int gameRes = bd.gameOver();
         if (gameRes != OthelloBoard.GAME_IN_PROGRESS) {
             // Need to give winning score for more compelling results
             int heuValue = bd.evaluateSimple();
+
+            // Want to win as many as possible still, so combine heuristics as well
             if (heuValue > 0)
-                value[0] = WINNING_SCORE;
+                value[0] = WINNING_SCORE + heuValue;
             else if (heuValue == 0)
                 value[0] = 0;
             else
-                value[0] = -WINNING_SCORE;
+                value[0] = -WINNING_SCORE + heuValue;
             return -1;
         }
 
         if (depth == 0) {
-            value[0] = bd.evaluateSimple();
+            if (bd.getremainingPieces() > depth + 2)
+                value[0] = bd.evaluateIntermediate();
+            else
+                value[0] = bd.evaluateSimple();
             return -1;
         }
 
@@ -37,15 +107,19 @@ public class BoardTree {
         boolean maximizing = bd.getTurn();
         Set<Integer> nextMoves = bd.getMobility();
 
-        List<Integer> nmsorted = new ArrayList<>(nextMoves);
+        List<Integer> nmsorted = new ArrayList<>();
         Map<Integer, Integer> incMap = new HashMap<>();
         for (int mv : nextMoves) {
-            int inc = bd.getFlipSet(mv).size();
+            int inc = bd.getInc(mv); // Gets increment in heuristics
             incMap.put(mv, inc);
+            // TODO investigate whether or not to implement move-filtering
+            nmsorted.add(mv);
             // TODO add direct pruning based on inc here after evaluation function is complete.
         }
 
-        nmsorted.sort(new Comparator<Integer>() {
+        if (nmsorted.isEmpty())
+            nmsorted.addAll(nextMoves);
+        nmsorted.sort(new Comparator<Integer>() { // Moves with more potentials get evaluated first
             @Override
             public int compare(Integer o1, Integer o2) {
                 int v1 = incMap.get(o1);
@@ -59,16 +133,20 @@ public class BoardTree {
         int bestMove = -1;
         if (maximizing) {
             int maxVal = Integer.MIN_VALUE;
+            int limit = EVAL_LIMITS[curDepth];
+            int moveCtr = 0;
             for (int move : nmsorted) {
-                boolean result = bd.updateBoard(move);
-                if (!result) {
-                    System.out.println("Update rejected, move: " + move);
-                    System.out.println("Turn: " + bd.getTurn());
-                    bd.render();
+                if (moveCtr > limit) {
+                    break;
                 }
+                boolean result = bd.updateBoard(move);
+//                if (!result) {
+//                    System.out.println("Update rejected, move: " + move);
+//                    System.out.println("Turn: " + bd.getTurn());
+//                    bd.render();
+//                }
                 updateCount++;
-//                System.out.println("After update, pieces: " + bd.getPieceCount());
-                alphaBetaSilly(bd, depth - 1, alpha, beta, value);
+                alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1);
                 if (value[0] > maxVal) {
                     maxVal = value[0];
                     bestMove = move;
@@ -76,40 +154,117 @@ public class BoardTree {
 
                 bd.withdraw();
                 withdrawCount++;
-//                System.out.println("After withdraw, pieces: " + bd.getPieceCount());
                 alpha = Math.max(alpha, maxVal);
                 if (beta <= alpha)
                     break;
+                moveCtr++;
             }
 
-            value[0] = maxVal;
+            if (curDepth == 1)
+            {
+                int randomPurt = new Random().nextInt(11) - 5;
+                value[0] = maxVal + randomPurt;
+                System.out.println("Randomization in play here, score: " + (maxVal + randomPurt));
+            }
+            else
+            {
+                value[0] = maxVal;
+            }
         } else {
             int minVal = Integer.MAX_VALUE;
+            int limit = EVAL_LIMITS[curDepth];
+            int moveCtr = 0;
             for (int move : nmsorted) {
-                boolean result = bd.updateBoard(move);
-                if (!result) {
-                    System.out.println("Update rejected, move: " + move);
-                    System.out.println("Turn: " + bd.getTurn());
-                    bd.render();
+                if (moveCtr > limit) {
+                    break;
                 }
+                boolean result = bd.updateBoard(move);
+//                if (!result) {
+//                    System.out.println("Update rejected, move: " + move);
+//                    System.out.println("Turn: " + bd.getTurn());
+//                    bd.render();
+//                }
                 updateCount++;
-//                System.out.println("After update, pieces: " + bd.getPieceCount());
-                alphaBetaSilly(bd, depth - 1, alpha, beta, value);
+                alphaBetaSillyImpl(bd, depth - 1, alpha, beta, value, curDepth + 1);
                 if (value[0] < minVal) {
                     minVal = value[0];
                     bestMove = move;
                 }
                 bd.withdraw();
                 withdrawCount++;
-//                System.out.println("After withdraw, pieces: " + bd.getPieceCount());
                 beta = Math.min(beta, minVal);
+                if (beta <= alpha)
+                    break;
+                moveCtr++;
+            }
+
+            if (curDepth == 1)
+            {
+                int randomPurt = new Random().nextInt(11) - 5;
+                value[0] = minVal + randomPurt;
+                System.out.println("Randomization in play here, score: " + (minVal + randomPurt));
+            }
+            else
+            {
+                value[0] = minVal;
+            }
+        }
+
+        return bestMove;
+    }
+
+    private static int bruteForce(OthelloBoard bd, int alpha, int beta, int[] endDiff)
+    {
+        if (bd.gameOver() !=  OthelloBoard.GAME_IN_PROGRESS)
+        {
+            endDiff[0] = bd.evaluateSimple();
+            return -1;
+        }
+
+        Set<Integer> nmoves = bd.getMobility();
+        boolean maximizing = bd.getTurn();
+
+        int bestMove = -1;
+        if (maximizing)
+        {
+            int maxVal = Integer.MIN_VALUE;
+            for (int move : nmoves) {
+                bd.updateBoard(move);
+                updateCount++;
+                bruteForce(bd, alpha, beta, endDiff);
+                if (endDiff[0] > maxVal) {
+                    maxVal = endDiff[0];
+                    bestMove = move;
+                }
+
+                bd.withdraw();
+                withdrawCount++;
+                alpha = Math.max(alpha, maxVal);
                 if (beta <= alpha)
                     break;
             }
 
-            value[0] = minVal;
+            endDiff[0] = maxVal;
         }
-
+        else
+        {
+            int minVal = Integer.MAX_VALUE;
+            for (int move : nmoves) {
+                boolean result = bd.updateBoard(move);
+                updateCount++;
+                bruteForce(bd, alpha, beta, endDiff);
+                if (endDiff[0] < minVal) {
+                    minVal = endDiff[0];
+                    bestMove = move;
+                }
+                bd.withdraw();
+                withdrawCount++;
+                beta = Math.min(beta, minVal);
+                if (beta <= alpha)
+                    break;
+            }
+            endDiff[0] = minVal;
+        }
         return bestMove;
     }
 }

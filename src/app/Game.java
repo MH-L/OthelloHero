@@ -8,6 +8,8 @@ import java.util.Scanner;
 public class Game {
     public static void main(String[] args) {
         playInteractively();
+
+//        selfPlay(25);
 //        OthelloBoard ob = new OthelloBoard();
 //        long curTime = System.currentTimeMillis();
 //        ob.updateBoard(34);
@@ -31,7 +33,7 @@ public class Game {
 //        ob.withdraw();
 //        ob.withdraw();
 //        System.out.println("Turn: " + ob.getTurn());
-//        System.out.println("Move suggested by board tree: " + BoardTree.alphaBetaSilly(ob, 10));
+//        System.out.println("Move suggested by board tree: " + BoardTree.alphaBetaSillyImpl(ob, 10));
 //        ob.reset();
 //        System.out.println("Time spent: " + (System.currentTimeMillis() - curTime));
 //        System.out.println("Update count: " + BoardTree.updateCount);
@@ -47,8 +49,15 @@ public class Game {
         Scanner sc = new Scanner(System.in);
         while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
             if (board.getTurn()) {
-                int optimal = BoardTree.alphaBetaSilly(board, 10);
+//                int optimal = BoardTree.alphaBetaSillyImpl(board, 9);
+                int optimal = BoardTree.alphaBetaMulti(board, 8);
+                System.out.println("Evaluation: " +  board.evaluateIntermediate());
                 board.updateBoard(optimal);
+                System.out.println("Evaluation after: " + board.evaluateIntermediate());
+
+                int rowIdx = optimal / OthelloBoard.WIDTH + 1;
+                int colIdx = optimal % OthelloBoard.WIDTH + 1;
+                System.out.println("Computer Move: " + rowIdx + "," + colIdx);
             } else {
                 board.render();
                 System.out.println("Now, it's your turn!");
@@ -61,11 +70,66 @@ public class Game {
                     boolean valid = board.updateBoard(rowIdx * OthelloBoard.WIDTH + colIdx);
                     if (!valid)
                         throw new IllegalArgumentException();
+                    board.render();
                 } catch (Exception e) {
                     System.out.println("That is not a valid choice!");
                     continue;
                 }
             }
         }
+
+        System.out.println("Game finished, here is the stats: ");
+        System.out.println("Black pieces: " + board.getNumBlack());
+        System.out.println("White pieces: " + board.getNumWhite());
+    }
+
+    private static void selfPlay(int rounds) {
+        int blWins = 0;
+        int wtWins = 0;
+        int drawCnt = 0;
+        for (int i = 0; i < rounds; i++) {
+            OthelloBoard board = new OthelloBoard();
+            while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
+                if (board.getTurn()) {
+                    int optimal = BoardTree.alphaBetaMulti(board, 8);
+                    board.updateBoard(optimal);
+                    System.out.println("Black move finished, board configuration:");
+                    board.render();
+                } else {
+                    int optimal = BoardTree.alphaBetaSillyImpl(board, 7);
+                    board.updateBoard(optimal);
+                    System.out.println("White move finished, board configuration:");
+                    board.render();
+                }
+            }
+
+            System.out.println("Game finished, here is the stats: ");
+            int blPieces = board.getNumBlack();
+            int wtPieces = board.getNumWhite();
+            System.out.println("Black pieces: " + blPieces);
+            System.out.println("White pieces: " + wtPieces);
+            if (blPieces > wtPieces)
+            {
+                blWins++;
+            }
+            else if (wtPieces > blPieces)
+            {
+                wtWins++;
+            }
+            else
+            {
+                drawCnt++;
+            }
+
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("Self run finished, black wins: " +
+                blWins + ", white wins: " + wtWins + ", draws: " + drawCnt);
     }
 }
