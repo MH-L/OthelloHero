@@ -6,6 +6,8 @@ import model.OthelloBoard;
 import java.util.Scanner;
 
 public class Game {
+    private static final int SELF_PLAY_DEPTH = 8;
+
     public static void main(String[] args) {
 //        playInteractively();
 
@@ -94,14 +96,16 @@ public class Game {
             OthelloBoard board = new OthelloBoard();
             while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
                 if (board.getTurn()) {
-                    int optimal = BoardTree.alphaBetaMulti(board, 10);
+                    int optimal = BoardTree.alphaBetaMulti(board, SELF_PLAY_DEPTH);
                     board.updateBoard(optimal);
+//                    System.err.println("Terpucom move: " + optimal);
                     System.out.println("Black move finished, board configuration:");
                     board.render();
                 } else {
 //                    int optimal = BoardTree.alphaBetaSilly(board, 8);
-                    int optimal = BoardTree.alphaBetaMulti(board, 10);
+                    int optimal = BoardTree.alphaBetaMulti(board, SELF_PLAY_DEPTH);
                     board.updateBoard(optimal);
+//                    System.err.println("Terpucom move: " + optimal);
                     System.out.println("White move finished, board configuration:");
                     board.render();
                 }

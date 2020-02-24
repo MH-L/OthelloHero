@@ -238,14 +238,6 @@ public class OthelloBoard {
         return numBlackPieces - numWhitePieces;
     }
 
-    public int evaluate(int option) {
-        if (option == 1)
-            return evaluateSimple();
-        if (option == 2)
-            return evaluateIntermediate();
-        return -1000;
-    }
-
     public int evaluateIntermediate() {
         // Considering the following 4 metrics:
         // 1) pieces for each side
@@ -262,7 +254,7 @@ public class OthelloBoard {
         int cornerAdj = 100 * getCornerAdjacency();
 //        int badLocDiff = getBadLocOffset() * (getremainingPieces() / 4);
 
-        return (int) Math.round((double) (pieceDiff + 2 * mobilityDiff + 40 * cornerDiff - 0.5 * flipProneDiff - 5 * cornerAdj) / 10.0);
+        return (int) Math.round((double) (pieceDiff + 5 * mobilityDiff + 40 * cornerDiff - 0.5 * flipProneDiff - 5 * cornerAdj) / 10.0);
     }
 
     private int getPieceDiff() {
@@ -271,7 +263,10 @@ public class OthelloBoard {
         {
             for (int j = 0; j < grid[i].length; j++)
             {
-                absScore += (grid[i][j] == '1' ? PIECE_VALUE_CHART[i][j] : -PIECE_VALUE_CHART[i][j]);
+                if (grid[i][j] != '0')
+                {
+                    absScore += (grid[i][j] == '1' ? PIECE_VALUE_CHART[i][j] : -PIECE_VALUE_CHART[i][j]);
+                }
             }
         }
         return absScore;

@@ -27,13 +27,16 @@ public class BoardTree {
 
     public static int alphaBetaMulti(OthelloBoard bd, int depth) {
         Set<Integer> nmoves = bd.getMobility();
-        int[] curBest = {Integer.MIN_VALUE};
+
+        boolean curTurn = bd.getTurn();
+        int[] curBest = curTurn ? new int[]{Integer.MIN_VALUE} : new int[]{Integer.MAX_VALUE};
         int[] curOutput = {-1};
         int numRemaining = bd.getremainingPieces();
         List<Thread> startedThreads = new ArrayList<>();
         for (int mv : nmoves) {
             OthelloBoard newCopy = new OthelloBoard(bd);
             newCopy.updateBoard(mv);
+
             int[] eval = {0};
             Thread t = new Thread(() -> {
                 if (numRemaining < 16)
@@ -46,9 +49,20 @@ public class BoardTree {
                     alphaBetaSillyImpl(newCopy, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, eval, 1, new HashMap<>());
                 }
 
-                if (eval[0] > curBest[0]) {
-                    curOutput[0] = mv;
-                    curBest[0] = eval[0];
+                System.out.println("Move: " + mv + ", eval: " + eval[0]);
+                if (curTurn)
+                {
+                    if (eval[0] > curBest[0]) {
+                        curOutput[0] = mv;
+                        curBest[0] = eval[0];
+                    }
+                }
+                else
+                {
+                    if (eval[0] < curBest[0]) {
+                        curOutput[0] = mv;
+                        curBest[0] = eval[0];
+                    }
                 }
             });
 
@@ -182,9 +196,9 @@ public class BoardTree {
                 }
 
                 if (curDepth == 1) {
-                    int randomPurt = new Random().nextInt(11) - 5;
+                    int randomPurt = new Random().nextInt(5) - 2;
                     value[0] = maxVal + randomPurt;
-                    System.out.println("Randomization in play here, score: " + (maxVal + randomPurt));
+//                    System.out.println("Randomization in play here, score: " + (maxVal + randomPurt));
                 } else {
                     value[0] = maxVal;
                     evalCache.put(hashVal, maxVal);
@@ -220,7 +234,7 @@ public class BoardTree {
                 if (curDepth == 1) {
                     int randomPurt = new Random().nextInt(11) - 5;
                     value[0] = minVal + randomPurt;
-                    System.out.println("Randomization in play here, score: " + (minVal + randomPurt));
+//                    System.out.println("Randomization in play here, score: " + (minVal + randomPurt));
                 } else {
                     value[0] = minVal;
                     evalCache.put(hashVal, minVal);
