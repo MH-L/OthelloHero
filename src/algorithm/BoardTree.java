@@ -124,7 +124,8 @@ public class BoardTree {
 
         // Just so this function doesn't look weird
         boolean maximizing = bd.getTurn();
-        Set<Integer> nextMoves = bd.getMobility();
+        Set<Integer> nextMoves = new HashSet<>();
+        nextMoves.addAll(bd.getMobility()); // TODO workaround for conmodification exception, investigate!
 
         List<Integer> nmsorted = new ArrayList<>();
         if (depth > 1) {
@@ -253,7 +254,8 @@ public class BoardTree {
             return -1;
         }
 
-        Set<Integer> nmoves = bd.getMobility();
+        Set<Integer> nmoves = new HashSet<>();
+        nmoves.addAll(bd.getMobility());
         boolean maximizing = bd.getTurn();
 
         int bestMove = -1;

@@ -6,12 +6,12 @@ import model.OthelloBoard;
 import java.util.Scanner;
 
 public class Game {
-    private static final int SELF_PLAY_DEPTH = 8;
+    private static final int SELF_PLAY_DEPTH = 9;
 
     public static void main(String[] args) {
-//        playInteractively();
-
+//        playInteractively(false);
         selfPlay(25);
+
 //        OthelloBoard ob = new OthelloBoard();
 //        long curTime = System.currentTimeMillis();
 //        ob.updateBoard(34);
@@ -43,16 +43,16 @@ public class Game {
 //        ob.render();
     }
 
-    public static void playInteractively() {
+    public static void playInteractively(boolean side) {
         System.out.println("Welcome to Othello Hero, LMH's second attempt for games!");
         System.out.println("Choose difficulty... OH NO! The only difficulty is hell mode!");
         System.out.println("Game started!");
         OthelloBoard board = new OthelloBoard();
         Scanner sc = new Scanner(System.in);
         while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
-            if (board.getTurn()) {
+            if (board.getTurn() == side) {
 //                int optimal = BoardTree.alphaBetaSillyImpl(board, 9);
-                int optimal = BoardTree.alphaBetaMulti(board, 8);
+                int optimal = BoardTree.alphaBetaMulti(board, 9);
                 System.out.println("Evaluation: " +  board.evaluateIntermediate());
                 board.updateBoard(optimal);
                 System.out.println("Evaluation after: " + board.evaluateIntermediate());
@@ -96,13 +96,14 @@ public class Game {
             OthelloBoard board = new OthelloBoard();
             while (board.gameOver() == OthelloBoard.GAME_IN_PROGRESS) {
                 if (board.getTurn()) {
+//                    int optimal = BoardTree.alphaBetaSilly(board, SELF_PLAY_DEPTH);
                     int optimal = BoardTree.alphaBetaMulti(board, SELF_PLAY_DEPTH);
                     board.updateBoard(optimal);
 //                    System.err.println("Terpucom move: " + optimal);
                     System.out.println("Black move finished, board configuration:");
                     board.render();
                 } else {
-//                    int optimal = BoardTree.alphaBetaSilly(board, 8);
+//                    int optimal = BoardTree.alphaBetaSilly(board, SELF_PLAY_DEPTH);
                     int optimal = BoardTree.alphaBetaMulti(board, SELF_PLAY_DEPTH);
                     board.updateBoard(optimal);
 //                    System.err.println("Terpucom move: " + optimal);

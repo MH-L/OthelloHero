@@ -22,8 +22,8 @@ public class OthelloBoard {
     private int numWhitePieces = 0;
     private int blackCorners = 0;
     private int whiteCorners = 0;
-    private int blackInstability = 0;
-    private int whiteInstability = 0;
+//    private int blackInstability = 0;
+//    private int whiteInstability = 0;
 
     // Original scores:
     // 20, -3, 11, 8, -7, 4, 1, 2, 2, -3
@@ -204,8 +204,8 @@ public class OthelloBoard {
         numWhitePieces = other.numWhitePieces;
         blackCorners = other.blackCorners;
         whiteCorners = other.whiteCorners;
-        blackInstability = other.blackInstability;
-        whiteInstability = other.whiteInstability;
+//        blackInstability = other.blackInstability;
+//        whiteInstability = other.whiteInstability;
         turn = other.turn;
     }
 
@@ -250,11 +250,12 @@ public class OthelloBoard {
         int pieceDiff = getPieceDiff() * 2; // originally, the constant was 10
         int mobilityDiff = (int) (100 * ((double) (blackMobility.size() - whiteMobility.size()) / (double) (blackMobility.size() + whiteMobility.size())));
         int cornerDiff = 25 * (blackCorners - whiteCorners);
-        int flipProneDiff = (int) (100 * (double) (blackInstability - whiteInstability) / (double) (blackInstability + whiteInstability));
+//        int flipProneDiff = (int) (100 * (double) (blackInstability - whiteInstability) / (double) (blackInstability + whiteInstability));
         int cornerAdj = 100 * getCornerAdjacency();
 //        int badLocDiff = getBadLocOffset() * (getremainingPieces() / 4);
 
-        return (int) Math.round((double) (pieceDiff + 5 * mobilityDiff + 40 * cornerDiff - 0.5 * flipProneDiff - 5 * cornerAdj) / 10.0);
+//        return (int) Math.round((double) (pieceDiff + 5 * mobilityDiff + 40 * cornerDiff - 0.5 * flipProneDiff - 5 * cornerAdj) / 10.0);
+        return (int) Math.round((double) (pieceDiff + 5 * mobilityDiff + 40 * cornerDiff - 5 * cornerAdj) / 10.0);
     }
 
     private int getPieceDiff() {
@@ -380,8 +381,8 @@ public class OthelloBoard {
         turn = true;
         blackCorners = 0;
         whiteCorners = 0;
-        blackInstability = 0;
-        whiteInstability = 0;
+//        blackInstability = 0;
+//        whiteInstability = 0;
 
         // reset grid
         for (int i = 0; i < grid.length; i++) {
@@ -397,11 +398,9 @@ public class OthelloBoard {
         grid[WIDTH / 2 - 1][HEIGHT / 2] = '1';
         grid[WIDTH / 2][HEIGHT / 2 - 1] = '1';
         grid[WIDTH / 2][HEIGHT / 2] = '2';
-        countMobility(true);
+        countMobility();
         numBlackPieces = 2;
         numWhitePieces = 2;
-        blackMobility = countMobility(true);
-        whiteMobility = countMobility(false);
     }
 
     public boolean updateBoard(int move) {
@@ -430,8 +429,7 @@ public class OthelloBoard {
         else numWhitePieces++;
 
         // Next turn is the opponent's
-        whiteMobility = countMobility(false);
-        blackMobility = countMobility(true);
+        countMobility();
 
         turn = !turn;
         // The player with no mobility has to give up their turn
@@ -509,73 +507,86 @@ public class OthelloBoard {
             }
         }
 
-        blackMobility = countMobility(true);
-        whiteMobility = countMobility(false);
+        countMobility();
         turn = turnHistory.get(turnHistory.size() - 1);
         turnHistory.remove(turnHistory.size() - 1);
     }
 
-    private Set<Integer> countMobility(boolean isFirst) {
-        Set<Integer> mobility = new HashSet<>();
-        Set<Integer> flipProne = new HashSet<>();
-        Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
+    private void countMobility() {
+        blackMobility.clear();
+        whiteMobility.clear();
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[i].length; j++) {
+                int pos = i * WIDTH + j;
+                if (grid[i][j] == '0' && hasMobility(pos, true)) {
+                    blackMobility.add(pos);
+                }
 
-        // Rows
-        for (int i = 0; i < HEIGHT; i++) {
-            String row = getRow(i);
-            if (map.containsKey(row)) {
-                for (Map.Entry<Integer, Set<Integer>> entry : map.get(row).entrySet()) {
-                    mobility.add(i * WIDTH + entry.getKey());
-                    for (int canFlip : entry.getValue()) {
-                        flipProne.add(i * WIDTH + canFlip);
-                    }
+                if (grid[i][j] == '0' && hasMobility(pos, false)) {
+                    whiteMobility.add(pos);
                 }
             }
         }
 
-        // Cols
-        for (int i = 0; i < WIDTH; i++) {
-            String col = getCol(i);
-            if (map.containsKey(col)) {
-                for (Map.Entry<Integer, Set<Integer>> entry : map.get(col).entrySet()) {
-                    mobility.add(entry.getKey() * WIDTH + i);
-                    for (int canFlip : entry.getValue()) {
-                        flipProne.add(canFlip * WIDTH + i);
-                    }
-                }
-            }
-        }
-
-        // LR diagonals
-        for (int i = 0; i < NUM_LR_DIAGS; i++) {
-            String lrDiag = getLRDiag(i);
-            if (map.containsKey(lrDiag)) {
-                for (Map.Entry<Integer, Set<Integer>> entry : map.get(lrDiag).entrySet()) {
-                    mobility.add(lrDiagToBoardPosition(i, entry.getKey()));
-                    for (int canFlip : entry.getValue()) {
-                        flipProne.add(lrDiagToBoardPosition(i, canFlip));
-                    }
-                }
-            }
-        }
-
-        // RL diagonals
-        for (int i = 0; i < NUM_RL_DIAGS; i++) {
-            String rlDiag = getRLDiag(i);
-            if (map.containsKey(rlDiag)) {
-                for (Map.Entry<Integer, Set<Integer>> entry : map.get(rlDiag).entrySet()) {
-                    mobility.add(rlDiagToBoardPosition(i, entry.getKey()));
-                    for (int canFlip : entry.getValue()) {
-                        flipProne.add(rlDiagToBoardPosition(i, canFlip));
-                    }
-                }
-            }
-        }
-
-        if (isFirst) whiteInstability = flipProne.size();
-        else blackInstability = flipProne.size();
-
-        return mobility;
+//        Set<Integer> flipProne = new HashSet<>();
+//        Map<String, Map<Integer, Set<Integer>>> map = isFirst ? cacheMapBlack : cacheMapWhite;
+//
+//        // Rows
+//        for (int i = 0; i < HEIGHT; i++) {
+//            String row = getRow(i);
+//            if (map.containsKey(row)) {
+//                for (Map.Entry<Integer, Set<Integer>> entry : map.get(row).entrySet()) {
+//                    mobility.add(i * WIDTH + entry.getKey());
+//                    for (int canFlip : entry.getValue()) {
+//                        flipProne.add(i * WIDTH + canFlip);
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Cols
+//        for (int i = 0; i < WIDTH; i++) {
+//            String col = getCol(i);
+//            if (map.containsKey(col)) {
+//                for (Map.Entry<Integer, Set<Integer>> entry : map.get(col).entrySet()) {
+//                    mobility.add(entry.getKey() * WIDTH + i);
+//                    for (int canFlip : entry.getValue()) {
+//                        flipProne.add(canFlip * WIDTH + i);
+//                    }
+//                }
+//            }
+//        }
+//
+//        // LR diagonals
+//        for (int i = 0; i < NUM_LR_DIAGS; i++) {
+//            String lrDiag = getLRDiag(i);
+//            if (map.containsKey(lrDiag)) {
+//                for (Map.Entry<Integer, Set<Integer>> entry : map.get(lrDiag).entrySet()) {
+//                    mobility.add(lrDiagToBoardPosition(i, entry.getKey()));
+//                    for (int canFlip : entry.getValue()) {
+//                        flipProne.add(lrDiagToBoardPosition(i, canFlip));
+//                    }
+//                }
+//            }
+//        }
+//
+//        // RL diagonals
+//        for (int i = 0; i < NUM_RL_DIAGS; i++) {
+//            String rlDiag = getRLDiag(i);
+//            if (map.containsKey(rlDiag)) {
+//                for (Map.Entry<Integer, Set<Integer>> entry : map.get(rlDiag).entrySet()) {
+//                    mobility.add(rlDiagToBoardPosition(i, entry.getKey()));
+//                    for (int canFlip : entry.getValue()) {
+//                        flipProne.add(rlDiagToBoardPosition(i, canFlip));
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (isFirst) whiteInstability = flipProne.size();
+//        else blackInstability = flipProne.size();
+//
+//        return mobility;
     }
 
     private String getRow(int index) {
@@ -709,5 +720,108 @@ public class OthelloBoard {
             }
             System.out.print('\n');
         }
+    }
+
+    private boolean hasMobility(int position, boolean first) { // Assuming position is unoccupied AND the position is valid!
+        int xcoord = position % WIDTH;
+        int ycoord = position / WIDTH;
+        char selfPiece = first ? '1' : '2';
+        char oppPiece = first ? '2' : '1';
+
+        // Row and column
+        if (isOnBoard(xcoord - 1, ycoord) && grid[ycoord][xcoord - 1] == oppPiece) {
+            for (int i = xcoord - 2; i >= 0; i--) {
+                if (grid[ycoord][i] == selfPiece) {
+                    return true;
+                }
+                else if (grid[ycoord][i] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord + 1, ycoord) && grid[ycoord][xcoord + 1] == oppPiece) {
+            for (int i = xcoord + 2; i < WIDTH; i++) {
+                if (grid[ycoord][i] == selfPiece) {
+                    return true;
+                }
+                else if (grid[ycoord][i] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord, ycoord - 1) && grid[ycoord - 1][xcoord] == oppPiece) {
+            for (int i = ycoord - 2; i >= 0; i--) {
+                if (grid[i][xcoord] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][xcoord] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord, ycoord + 1) && grid[ycoord + 1][xcoord] == oppPiece) {
+            for (int i = ycoord + 2; i < HEIGHT; i++) {
+                if (grid[i][xcoord] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][xcoord] == '0') {
+                    break;
+                }
+            }
+        }
+
+        // Four diagonal directions
+        if (isOnBoard(xcoord + 1, ycoord + 1) && grid[ycoord + 1][xcoord + 1] == oppPiece) {
+            for (int i = ycoord + 2, j = xcoord + 2; i < HEIGHT && j < WIDTH; i++, j++) {
+                if (grid[i][j] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][j] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord - 1, ycoord - 1) && grid[ycoord - 1][xcoord - 1] == oppPiece) {
+            for (int i = ycoord - 2, j = xcoord - 2; i >= 0 && j >= 0; i--, j--) {
+                if (grid[i][j] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][j] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord + 1, ycoord - 1) && grid[ycoord - 1][xcoord + 1] == oppPiece) {
+            for (int i = ycoord - 2, j = xcoord + 2; i >= 0 && j < WIDTH; i--, j++) {
+                if (grid[i][j] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][j] == '0') {
+                    break;
+                }
+            }
+        }
+
+        if (isOnBoard(xcoord - 1, ycoord + 1) && grid[ycoord + 1][xcoord - 1] == oppPiece) {
+            for (int i = ycoord + 2, j = xcoord - 2; i < HEIGHT && j >= 0; i++, j--) {
+                if (grid[i][j] == selfPiece) {
+                    return true;
+                }
+                else if (grid[i][j] == '0') {
+                    break;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isOnBoard(int xcoord, int ycoord) {
+        return xcoord >= 0 && xcoord < WIDTH && ycoord >= 0 && ycoord < HEIGHT;
     }
 }
